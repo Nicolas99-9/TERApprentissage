@@ -5,7 +5,7 @@
 import pip
 import facebook
 from pprint import pprint
-
+import codecs
 
 
 
@@ -52,6 +52,7 @@ def show_page_informations(name):
         print("ID du message ", post['from']['id'])
         le_message = ""
         if('message' in post.keys()):
+            print(post['message'])
             le_message = post['message']
         if('description' in post.keys()):
             le_message =  le_message + "\n" + post['description']
@@ -60,7 +61,10 @@ def show_page_informations(name):
             commentaire_not_final = post['comments']
             for element in range(len(commentaire_not_final['data'])):
                 commentaire_associe.append(commentaire_not_final['data'][element]['message'])
-        print("Message : ",le_message)
+        #DO NOT USE THIS : print("Le message : ",le_message) => encoding problems
+        print("MESSAGE :")
+        print(le_message)
+        print("COMMENTAIRES DU MESSAGE :")
         pprint(commentaire_associe)
         print("___________________________________")
 
