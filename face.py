@@ -1,3 +1,7 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+
 import pip
 import facebook
 from pprint import pprint
@@ -41,10 +45,27 @@ def show_page_informations(name):
     pages = graph.get_connections(page['id'], 'posts') # contains an object with all the page informations
     #pprint(page)
     #contains all the messages and the comments
-    pprint([post for post in pages['data']])
+    datas_page = [post for post in pages['data']]
+    #each posts and its comments are saved in datas_page[i] 
+    for element in range(len(datas_page)):
+        post = (datas_page[element])
+        print("ID du message ", post['from']['id'])
+        le_message = ""
+        if('message' in post.keys()):
+            le_message = post['message']
+        if('description' in post.keys()):
+            le_message =  le_message + "\n" + post['description']
+        commentaire_associe = []
+        if('comments' in post.keys()):
+            commentaire_not_final = post['comments']
+            for element in range(len(commentaire_not_final['data'])):
+                commentaire_associe.append(commentaire_not_final['data'][element]['message'])
+        print("Message : ",le_message)
+        pprint(commentaire_associe)
+        print("___________________________________")
 
 
+#show_profile('BillGates')
+show_page_informations('UnivParisSud')
 
-#show_page_informations('UnivParisSud')
-show_profile('BillGates')
 
