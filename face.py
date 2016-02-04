@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-
+from __future__ import print_function
 import pip
 import facebook
 from pprint import pprint
@@ -10,8 +10,9 @@ import codecs
 
 
 
+
 #get access token => https://developers.facebook.com/tools/explorer/
-access_token = 'CAACEdEose0cBAP34lC343sJHw8MYDtLeOnTPLIZC9qVZC3muxZBRjkmzpgaqL02M5d3Gw5o6ZABZCJQgXXkr0og0ZCO1VORAgmJiP2UXG4XDcZAJZBQaiyXFnVLlM6XcQpTz4IZCTZAZBCYG4VELHZC8b1jidU0Xm80q6ii7YA4sXlti1xZCYoMfUmntHYRcd2v1dyq43QfyGiQoP36IeeBLFIWZCI'
+access_token = 'CAACEdEose0cBANgwuEAf1xaOwIjfRpJYncZBrO9GHuLKLMjAaGcYKDrD0XhKwaUBQ7JeDtkMVKrheDzud62G4XqwI2L7M6KridYdLhk5VfsXH1zs7fpiekAbowLF3ZCTaHE9EmqzbTRz2NXuE3oDiXx2mf8ciQdK42GY2jDkSpZAShLacsqIpJKwXjKyggmuFDdxzpBcQZDZD'
 graph = facebook.GraphAPI(access_token)
 
 
@@ -61,15 +62,12 @@ def show_page_informations(name):
             commentaire_not_final = post['comments']
             for element in range(len(commentaire_not_final['data'])):
                 commentaire_associe.append(commentaire_not_final['data'][element]['message'])
-        #DO NOT USE THIS : print("Le message : ",le_message) => encoding problems
-        print("MESSAGE :")
-        print(le_message)
-        print("COMMENTAIRES DU MESSAGE :")
-        pprint(commentaire_associe)
-        print("___________________________________")
+        print("MESSAGE :", le_message.encode('utf-8'))
+        print("COMMENTAIRES DU MESSAGE :", [commentaire_associe[i].encode('utf-8') for i in range (len(commentaire_associe))])
+        print("\n___________________________________")
 
 
 #show_profile('BillGates')
-show_page_informations('UnivParisSud')
+show_page_informations('creedmovie')
 
 
