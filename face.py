@@ -12,7 +12,7 @@ import codecs
 
 
 #get access token => https://developers.facebook.com/tools/explorer/
-access_token = 'CAACEdEose0cBANgwuEAf1xaOwIjfRpJYncZBrO9GHuLKLMjAaGcYKDrD0XhKwaUBQ7JeDtkMVKrheDzud62G4XqwI2L7M6KridYdLhk5VfsXH1zs7fpiekAbowLF3ZCTaHE9EmqzbTRz2NXuE3oDiXx2mf8ciQdK42GY2jDkSpZAShLacsqIpJKwXjKyggmuFDdxzpBcQZDZD'
+access_token = 'CAACEdEose0cBADOt4sFGZB1I1GO9PNv06z7O0XKwv2exJZC4fPoD5nxcoadRKJsikKDxK1wZB1lhVVN8IQWXGo9Lir7NLb8cjfL3LBTL0iAaSbISCGRc5u1EDep6fKLw01Gl5fCAKThyCVAmIXqA5AjSPP0s2oYjawlViQF4jyTimZCCY5C2XMTvwZAvkxuKwFD9snRLFo5oVxVoM3qIa'
 graph = facebook.GraphAPI(access_token)
 
 
@@ -62,12 +62,75 @@ def show_page_informations(name):
             commentaire_not_final = post['comments']
             for element in range(len(commentaire_not_final['data'])):
                 commentaire_associe.append(commentaire_not_final['data'][element]['message'])
-        print("MESSAGE :", le_message.encode('utf-8'))
-        print("COMMENTAIRES DU MESSAGE :", [commentaire_associe[i].encode('utf-8') for i in range (len(commentaire_associe))])
+        print("MESSAGE :", le_message)
+        print([commentaire_associe[i].encode('utf-8') for i in range (len(commentaire_associe))])
         print("\n___________________________________")
 
 
-#show_profile('BillGates')
-show_page_informations('creedmovie')
+#-------------------------- PARAMETRE DE FILTRAGE DE PAGE : METTRE A -1 SI INDIFFERENT------------------------------
 
+# nombre mins de likes
+NUM_LIKES = 8000
+#PAGE NON MODERES : 0 or 1
+IS_COMMUNITY_PAGE = -1
+#LOCATION ex : 'United States'
+LOCATION = -1
+#HAS A WEBSITE
+WEBSITE = 1
+#LIST OF WORDS THAT THE PAGE DESCRIPTION MUST CONTAINS
+DESCRIPTION = ["chocolate"]
+#CREATION TIME (all pages after this date)
+DATE = -1
+
+
+
+def filter_page(names):
+   posts = graph.get_objects(ids=names)
+   donnes = {}
+   for post_id in names:
+       #print(posts[post_id]['created_time'])
+       actuel = posts[post_id]
+       ajouter = True
+       if(NUM_LIKES!=-1 and "likes" in actuel):
+           if(actuel['likes']<NUM_LIKES):
+               ajouter = False
+       if(IS_COMMUNITY_PAGE !=-1 and "is_community_page" in actuel):
+           if(actuel['is_community_page']!=bool(IS_COMMUNITY_PAGE)):
+               ajouter = False
+       if(LOCATION !=-1 and "location" in actuel):
+           if("country" in actuel['location']):
+               if(actuel['location']['country'] != LOCATION):
+                   ajouter = False
+       if(WEBSITE != -1 and not "website" in actuel):
+           ajouter = False
+       if(len(DESCRIPTION) > 0 and "description" in actuel):
+           tmp = False
+           for mo in DESCRIPTION:
+               if(mo in actuel['description']):
+                   tmp = True
+           if(not tmp):
+               ajouter = False
+       if(ajouter):
+           donnes[post_id] = actuel
+   return donnes
+
+
+#find the page and return a dictionnary containing page data (id, website, creation time, description...)
+def find_a_page(subject,sub_categorie="all"):
+    #also possible to use 'type': 'group'
+    tmp = graph.request('search', {'q': subject, 'type': 'page'})
+    pages = {}
+    for element in tmp['data']:
+        if(sub_categorie=="all"):
+            pages[element['id']] = (element['name'],element['category'])
+        elif(sub_categorie==element['category']):
+            pages[element['id']] = (element['name'],element['category'])
+    print("NOMBRE de pages trouvees avant le tri ", len(pages))
+    after_filtering = filter_page(pages)
+    print("TAILLE DES DONNES APRES LE FILTRAGE",len(after_filtering))
+    return after_filtering
+
+#show_profile('BillGates')
+#show_page_informations('creedmovie')
+find_a_page("chocolat","Food/Beverages")
 
