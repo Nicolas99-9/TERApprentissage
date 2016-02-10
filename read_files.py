@@ -72,6 +72,9 @@ for i in range(len(tmp)):
 
 
 
+#ldl
+
+
 phrases = np.array(tmp1)
 y = np.array(tmp2)
 
