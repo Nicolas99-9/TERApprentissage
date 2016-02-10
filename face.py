@@ -12,7 +12,7 @@ import codecs
 
 
 #get access token => https://developers.facebook.com/tools/explorer/
-access_token = 'CAACEdEose0cBADOt4sFGZB1I1GO9PNv06z7O0XKwv2exJZC4fPoD5nxcoadRKJsikKDxK1wZB1lhVVN8IQWXGo9Lir7NLb8cjfL3LBTL0iAaSbISCGRc5u1EDep6fKLw01Gl5fCAKThyCVAmIXqA5AjSPP0s2oYjawlViQF4jyTimZCCY5C2XMTvwZAvkxuKwFD9snRLFo5oVxVoM3qIa'
+access_token = 'CAACEdEose0cBANJHtAqbStu3XipZAQLmm2ZClvKkDeLrosF1gvHPmgbkprZA0KX1NVtMUZCcwZBQcar2pBlnZBXMhoRJ9cGST17VYH2rhHZBAVbfECbZAkQezZCqdGpzV4b79jGPDd3SZBXQOkyTiYZBEZBceu1bU4Q6ODZB8yUKlvH1uDCyRVT1SsoElZBPxglBg7m7WPSvs6fc0C2AZDZD'
 graph = facebook.GraphAPI(access_token)
 
 
@@ -70,7 +70,7 @@ def show_page_informations(name):
 #-------------------------- PARAMETRE DE FILTRAGE DE PAGE : METTRE A -1 SI INDIFFERENT------------------------------
 
 # nombre mins de likes
-NUM_LIKES = 8000
+NUM_LIKES = -1
 #PAGE NON MODERES : 0 or 1
 IS_COMMUNITY_PAGE = -1
 #LOCATION ex : 'United States'
@@ -78,7 +78,7 @@ LOCATION = -1
 #HAS A WEBSITE
 WEBSITE = 1
 #LIST OF WORDS THAT THE PAGE DESCRIPTION MUST CONTAINS
-DESCRIPTION = ["chocolate"]
+DESCRIPTION = []
 #CREATION TIME (all pages after this date)
 DATE = -1
 
@@ -132,5 +132,14 @@ def find_a_page(subject,sub_categorie="all"):
 
 #show_profile('BillGates')
 #show_page_informations('creedmovie')
-find_a_page("chocolat","Food/Beverages")
+pages = find_a_page("saucisson","Food/Beverages")
+
+
+def display_infos_pages(pages):
+    for element in pages:
+        if('name' in pages[element]):
+            print("ID de la page : ",element , "Nom de la page :", pages[element]['name'])
+
+display_infos_pages(pages)
+
 
