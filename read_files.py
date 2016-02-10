@@ -10,6 +10,8 @@ from keras.layers.core import Dense,Dropout
 import random
 
 
+#load a file with the sentence and the associate labels
+print("loading")
 
 def transform_sentences_to_index_list(filename):
     tab = []
@@ -44,9 +46,44 @@ def transform_sentences_to_index_list(filename):
     return (np.array(phrases),np.array(tab),np.array(y))
 
 
+'''
+def load_file_without_labels(positif, negatif):
+    tab = []
+    maxs = 100
+    phrases = []
+    y = []
+    with codecs.open(positif,"r",encoding='utf-8') as my_file:
+        for line in my_file:
+            line= line.strip().lower() # remove the \n*
+            phrases.append(phrase)
+            y.append(1)
+            for mot in word_tokenize(phrase):
+                if(not mot in tab):
+                    tab.append(mot)
+    with codecs.open(negatif,"r",encoding='utf-8') as my_file:
+        for line in my_file:
+            line= line.strip().lower() # remove the \n*
+            phrases.append(phrase)
+            y.append(0)
+            for mot in word_tokenize(phrase):
+                if(not mot in tab):
+                    tab.append(mot)
+    print("moooooooooooos",tab)
+    print("longueur moyenne",np.mean([len(phrases[i]) for i in range(len(phrases))]))
+    for i in range(len(phrases)):
+        mots = word_tokenize(phrases[i])
+        tmp  = []
+        for element in mots:
+            tmp.append(tab.index(element))
+        if(len(tmp) < maxs):
+            for j in range(maxs - len(tmp)):
+                tmp.append(0)
+        elif(len(tmp)>maxs):
+                tmp = tmp[:maxs]
+        phrases[i] = tmp
+    return (np.array(phrases),np.array(tab),np.array(y))
 
-
-
+'''
 
     #pickle.dump( tab, open( "motsPN", "wb" ) )
 
@@ -55,7 +92,7 @@ def transform_sentences_to_index_list(filename):
 
 phrases,tab_des_mots,y = transform_sentences_to_index_list("imdb_labelled.txt")
 
-
+#phrases,tab_des_mots,y = load_file_without_labels("rt-polarity.pos","rt-polarity.neg")
 batch_size = 32 
 
 
