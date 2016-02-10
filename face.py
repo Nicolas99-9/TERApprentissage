@@ -12,7 +12,7 @@ import codecs
 
 
 #get access token => https://developers.facebook.com/tools/explorer/
-access_token = 'CAACEdEose0cBANJHtAqbStu3XipZAQLmm2ZClvKkDeLrosF1gvHPmgbkprZA0KX1NVtMUZCcwZBQcar2pBlnZBXMhoRJ9cGST17VYH2rhHZBAVbfECbZAkQezZCqdGpzV4b79jGPDd3SZBXQOkyTiYZBEZBceu1bU4Q6ODZB8yUKlvH1uDCyRVT1SsoElZBPxglBg7m7WPSvs6fc0C2AZDZD'
+access_token = 'CAACEdEose0cBAA7yu81btNZBcN9rxxQPhatmO8EE1aQmuD4cryjTGpYYuwWOwU6yAttQUpXUvHwmSwsASwi9rvP0c4T6ZA1v0CY3Bn76kg7siSMuxjsuZBCy8FZACorSO7JKPNUNZBPKrEtWZAM4lNqa6AgcFkgsMAXI1UzBh8wcFMvQPnLAmZBOrQzPQmhucUoGE3Yd2wI8gZDZD'
 graph = facebook.GraphAPI(access_token)
 
 
@@ -130,6 +130,11 @@ def find_a_page(subject,sub_categorie="all"):
     print("TAILLE DES DONNES APRES LE FILTRAGE",len(after_filtering))
     return after_filtering
 
+def display_pages_informations(pages):
+    for page in pages:
+        if('name' in pages[page]):
+            print("ID de la page : ", page , " Nom de la page :", pages[page]['name'])
+
 #show_profile('BillGates')
 #show_page_informations('creedmovie')
 pages = find_a_page("saucisson","Food/Beverages")
@@ -141,5 +146,5 @@ def display_infos_pages(pages):
             print("ID de la page : ",element , "Nom de la page :", pages[element]['name'])
 
 display_infos_pages(pages)
-
-
+pages = find_a_page("chocolat","Food/Beverages")
+display_pages_informations(pages)
