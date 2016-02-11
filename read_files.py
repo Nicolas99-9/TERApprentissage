@@ -135,16 +135,30 @@ print("score  : ",score)
 #-------------------------------------------------------------------------
 #Second model
 
+#number of differents words in the text
+max_features = len(tab_des_mots)+1
+#number of sentences in the text
+maxlen = len(phrases[0])
 
-max_features = 9300
-maxlen = len(tab_des_mots)+1
+
+#increase to improve the computation speed
 batch_size =10
 
-
+#create a sequential model
 model = Sequential()
+
+# create an embedding layer
+#change the vector of index of each sentence to bring closer the similar words (ex : 
 model.add(Embedding(max_features, 35, input_length=maxlen))
-model.add(LSTM(128)) # recurrent layer
+
+# create recurrent layer
+model.add(LSTM(128)) 
+
+#prevent the overfitting
 model.add(Dropout(0.5))
+
+#a simple layer to return 0 or 1 (binary value)
+
 model.add(Dense(1))
 model.add(Activation('sigmoid'))
 # try using different optimizers and different optimizer configs
