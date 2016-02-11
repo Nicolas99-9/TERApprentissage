@@ -11,6 +11,9 @@ import random
 from keras.layers.embeddings import Embedding
 from keras.layers.recurrent import LSTM
 
+
+
+
 #load a file with the sentence and the associate labels
 print("loading")
 
@@ -142,16 +145,22 @@ maxlen = len(phrases[0])
 
 
 #increase to improve the computation speed
-batch_size =10
+batch_size = 10
 
 #create a sequential model
 model = Sequential()
 
 # create an embedding layer
-#change le 
+#change the vector of index of each sentence to bring closer the similar words see: word2vec
+#similar sentence will have a similar vector
 model.add(Embedding(max_features, 35, input_length=maxlen))
 
-# create recurrent layer
+# create recurrent layer 
+#A Recurrent neural network has the capability to give itself feedback from past experiences. Apart from all the neurons in the network, it maintains a hidden state that changes as it sees different inputs. This hidden state is analogous to short-term memory. It remembers past experiences and bases its current answer on both the current input as well as past experiences. An illustration is shown in Figure 4.
+
+#LSTM keeps more words of its past than RNN
+#model.add(Dropout(0.5))
+
 model.add(LSTM(128)) 
 
 #prevent the overfitting
@@ -167,7 +176,7 @@ model.compile(loss='binary_crossentropy',
               class_mode="binary")
 
 print("Train...")
-model.fit(X_train, Y_train, batch_size=10, nb_epoch=3,
+model.fit(X_train, Y_train, batch_size=batch_size, nb_epoch=3,
           validation_data=(X_test, Y_test), show_accuracy=True)
 score, acc = model.evaluate(X_test, Y_test,
                             batch_size=batch_size,
@@ -175,6 +184,19 @@ score, acc = model.evaluate(X_test, Y_test,
 print('Test score:', score)
 print('Test accuracy:', acc)
 
+# save the model
+
+json_string = model.to_json()
+open('my_model_architecture.json', 'w').write(json_string)
+model.save_weights('my_model_weights.h5')
+
+# load a saved model 
+
+'''
+from keras.models import model_from_json
+model = model_from_json(open('my_model_architecture.json').read())
+model.load_weights('my_model_weights.h5')
+'''
 
 
 
