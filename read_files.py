@@ -117,7 +117,7 @@ X_test = phrases[9300:]
 Y_test = y[9300:]
 
 
-print("X : ",X_train[0])
+print("X : ",X_train[0].shape)
 print("Y !!!!:",Y_train)
 print("Y test : ",Y_test)
 #------------------------------------------------------------------------
@@ -188,6 +188,10 @@ print('Test score:', score)
 print('Test accuracy:', acc)
 
 # save the model
+
+print("prediction")
+print("shape de X test",X_test.shape)
+print(model.predict_classes(X_test))
 
 json_string = model.to_json()
 open('my_model_architecture-version-test.json', 'w').write(json_string)
