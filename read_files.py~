@@ -1,7 +1,7 @@
 #coding=utf-8
 import codecs
 import numpy as np
-import pickle
+import cPickle
 from nltk import word_tokenize
 from nltk import FreqDist
 from pprint import pprint
@@ -90,7 +90,10 @@ def load_file_without_labels(positif, negatif):
 #phrases,tab_des_mots,y = transform_sentences_to_index_list("imdb_labelled.txt")
 
 phrases,tab_des_mots,y = load_file_without_labels("rt-polarity.pos","rt-polarity.neg")
- 
+print("save the list of all the differents words")
+
+
+cPickle.dump(list(tab_des_mots), open('list_of_words-version-test.p', 'wb')) 
 
 
 #shuffle the data :
@@ -114,7 +117,7 @@ X_test = phrases[9300:]
 Y_test = y[9300:]
 
 
-print("X : ",X_train)
+print("X : ",X_train[0])
 print("Y !!!!:",Y_train)
 print("Y test : ",Y_test)
 #------------------------------------------------------------------------
@@ -159,7 +162,7 @@ model.add(Embedding(max_features, 35, input_length=maxlen))
 #A Recurrent neural network has the capability to give itself feedback from past experiences. Apart from all the neurons in the network, it maintains a hidden state that changes as it sees different inputs. This hidden state is analogous to short-term memory. It remembers past experiences and bases its current answer on both the current input as well as past experiences. An illustration is shown in Figure 4.
 
 #LSTM keeps more words of its past than RNN
-#model.add(Dropout(0.5))
+
 
 model.add(LSTM(128)) 
 
@@ -187,8 +190,8 @@ print('Test accuracy:', acc)
 # save the model
 
 json_string = model.to_json()
-open('my_model_architecture.json', 'w').write(json_string)
-model.save_weights('my_model_weights.h5')
+open('my_model_architecture-version-test.json', 'w').write(json_string)
+model.save_weights('my_model_weights-version-test.h5')
 
 # load a saved model 
 
