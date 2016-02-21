@@ -334,7 +334,7 @@ class Generation_Graphe:
     def redudancy_score(self,path,node):
         for element in node.get_next():
             nodess = self.get_node_with_id(element)
-            print(nodess.get_value())
+            #print(nodess.get_value())
             if(nodess in path):
                 self.redudancy_score(path,nodess)
         
@@ -358,16 +358,15 @@ class Generation_Graphe:
 
     #to complete
     #bug only compare with the last element of the old list
-    def inter(self,pri_overlap,new_pri):
+    '''def inter(self,pri_overlap,new_pri):
         ajout = True
+        #print("debug",pri_overlap,new_pri)
         if(len(new_pri) != self.nb_sent):
             return pri_overlap
         for element in pri_overlap:
             if(len(element) != self.nb_sent):
-                print("devient false")
+                #print("devient false")
                 ajout  = False
-            else:
-                print("debug",pri_overlap,new_pri)
             for i  in range(len(element)):
                 sid,pid = element[i]
                 if(len(new_pri)>=sid):
@@ -376,11 +375,29 @@ class Generation_Graphe:
                         ajout = False
         if(ajout):
             pri_overlap.append(new_pri)
+        return pri_overlap'''
+
+    def inter(self,pri_overlap,new_pri):
+        ajout = True
+        if(len(new_pri) != self.nb_sent):
+            return pri_overlap
+        last = len(pri_overlap)-1
+        if(len(pri_overlap[last]) != self.nb_sent):
+            return pri_overlap
+        for i  in range(len(pri_overlap[last])):
+            sid,pid = pri_overlap[last][i]
+            if(len(new_pri)>=sid):
+                sid2,pid2 = new_pri[sid-1]
+                if(abs(pid-pid2)> self.gap):
+                    ajout = False
+        if(ajout):
+            pri_overlap.append(new_pri)
         return pri_overlap
 
 
+
     def path_score(self,q,s):
-        return q*s
+        return q*s #also possible to use q
 
 
     def collabisble(self,name):
@@ -389,24 +406,37 @@ class Generation_Graphe:
     def valid_sentence(self,sentence):
         return True
 
+    def is_finishing_char(self,mot):
+        return (mot in self.punctutation or mot in self.conjunction)
+
+    def averagePathScore(self, liste):
+        compt = 0
+        return compt
+
+    def get_path_from_node_until_end(self,node):
+        pass
+
     def traverse(self,liste,node,score,pri_overlap,sentence,length,count,alread_visited):
-        '''print("name",node.get_value(),node.get_next())
-        print(count)'''
-        #print("name",node.get_value())
         redudancy = len(pri_overlap)
-        alread_visited.append(node.get_id())
+        #sentence = sentence + " " + node.get_value()
+        if(not self.is_finishing_char(node.get_value())):
+            alread_visited.append(node.get_id())
+        print(node.get_value(),pri_overlap,sentence)
         if(redudancy >= self.sigr):
+            #print("ok ajout")
             if((node.get_value() in self.punctutation) or (node.get_value() in self.conjunction)):
                 if(self.valid_sentence(sentence)):
                     final_score = score / length
                     liste.append((sentence,final_score))
         for element in node.get_next():
-            #print(element)
             if(element not in alread_visited):
                 voisin = self.get_node_with_id(element)
                 pri_new = self.inter(pri_overlap,voisin.get_score())
+                print("element : ",element,voisin.get_value(),"score : ",voisin.get_score(), " afet",pri_new)
                 redudancy = len(pri_new)
-                new_sent = sentence + " " + voisin.get_value()
+                new_sent = sentence
+                if(not voisin.get_value() in self.punctutation):
+                    new_sent = sentence + " " + voisin.get_value()
                 L = length + 1
                 new_score = score + self.path_score(redudancy,L)
                 #print("appel sur ",voisin.get_value())
@@ -415,25 +445,30 @@ class Generation_Graphe:
                     tmp = []
                     for vx in voisin.get_next():
                         voisin2 = self.get_node_with_id(vx)
-                        traverse(tmp,voisin2,0,pri_new,voisin2.get_value(),L)
+                        print("appell recursif depuis is")
+                        #self.traverse(tmp,voisin2,0,pri_new,voisin2.get_value(),L,count+1,alread_visited)
+
                         CC = list(set(tmp))
-                        CCpathScore = averagePathScore(CC)
+                        #print("CCCCC",CC)
+                        CCpathScore = self.averagePathScore(CC)
                         finalScore = new_score + CCpathScore
-                        stitchedSent = canchor + CC
-                        liste.appendd(stitchedSent,finalScore)
+                        stitchedSent = canchor + str(CC)
+                        liste.append((stitchedSent,finalScore))
                 else:
                     self.traverse(liste,voisin,new_score,pri_new,new_sent,L,count+1,alread_visited)
-                
 
 
-generator  = Generation_Graphe(["My phone calls drop frequently with the iPhone.","Great device,but the calls drop too frequently."],15)
+#generator  = Generation_Graphe(["My phone calls drop frequently with the iPhone.","Great device,but the calls drop too frequently."],15)
 
 '''
 generator = Generation_Graphe(["Three Rings for the Elven-kings under the sky","Seven for the Dwarf-lords in their halls of stone","Nine for Mortal Men doomed to die","One for the Dark Lord on his dark throne","One Ring to rule them all, One Ring to find them","One Ring to bring them all and in the darkness bind them","In the Land of Mordor where the Shadows lie."])
 '''
+
+generator  = Generation_Graphe(["the screen is very clear","the screen is big"],15)
 generator.generation()
 #generator.show_informations()
 generator.generate_valid_path()
+generator.show_informations()
 
 
 
