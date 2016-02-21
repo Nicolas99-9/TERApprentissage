@@ -255,9 +255,15 @@ class Etiquette:
 
 class Generation_Graphe:
 
-    def __init__(self,sentences):
+    def __init__(self,sentences,vsn):
         self.sentences = sentences
         self.nodes= []
+        self.sub_graphes = []
+        self.position = {}
+        self.vsn = vsn
+        self.punctutation = [".","!","?",";",",","\"",]
+        self.conjunction = ["for","and","nor","but","or","yet","so"]
+        self.sigr = 2
     
 
     def isWordIn(self ,word):
@@ -267,7 +273,7 @@ class Generation_Graphe:
         return False
 
     def get_node_with_id(self,ids):
-        for element in nodes:
+        for element in self.nodes:
             if(element.get_id()==ids):
                 return element
         raise Exception("Element not found")
@@ -279,9 +285,10 @@ class Generation_Graphe:
         raise Exception("Element not found")
 
     def generation(self):
-        tokenized = [nltk.word_tokenize(self.sentences[i]) for i in range(len(self.sentences))]
+        self.tokenized = [nltk.word_tokenize(self.sentences[i]) for i in range(len(self.sentences))]
+        self.generate_average_position()
         num_sent  = 1 
-        for sent in tokenized:
+        for sent in self.tokenized:
             actual = sent
             num_word = 1
             last = None
@@ -303,13 +310,76 @@ class Generation_Graphe:
     def show_informations(self):
         for node in self.nodes:
             node.show_node_informations()
+    
+    def generate_average_position(self):
+        for sent in self.tokenized:
+            for i in range(len(sent)):
+                if(not sent[i] in self.position):
+                    self.position[sent[i]] = []
+                    self.position[sent[i]].append(i)
+                else:
+                    self.position[sent[i]].append(i)
+        for element in self.position:
+            self.position[element] = np.mean(self.position[element])
 
 
-generator  = Generation_Graphe(["My phone calls drop frequently with the iPhone.","Great device,but the calls drop too frequently."])
+    def redudancy_score(self,path,node):
+        for element in node.get_next():
+            nodess = self.get_node_with_id(element)
+            print(nodess.get_value())
+            if(nodess in path):
+                self.redudancy_score(path,nodess)
+        
+    def generate_valid_path(self):
+        candidats = []
+        #self.redudancy_score(self.nodes,self.get_node_with_id(0))
+        for nod in self.nodes:
+            if(self.position[nod.get_value()]<=self.vsn):
+                pathLen = 1
+                score = 0
+                cList = []
+                pri = [nod.get_score()]
+                self.traverse(cList,nod,score,pri,nod.get_value(),pathLen)
+                candidats.append(cList)
+        print(candidats)
 
+    def traverse(self,liste,node,score,pri_overlap,sentence,length):
+        redudancy = len(pri_overlap)
+        if(redudancy >= self.self.sigr):
+            if(node.get_value() in self.punctutation or node.get_value() in self.conjunction):
+                if(valid_sentence(sentence)):
+                    final_score = score / length
+                    liste.append(sentence,final_score)
+        for element in node.get_next():
+            voisin = self.get_node_with_id(element)
+            pri_new = pri_overlap inter pri(voisin)
+            redudancy = len(pri_new)
+            new_sent = sentence + voisin.get_value()
+            L = length + 1
+            new_score = score + path_score(redudancy,L)
+            if(collabisble(voisin)):
+                canchor = new_sent
+                tmp = []
+                for vx in voisin.get_next():
+                    voisin2 = self.get_node_with_id(vx)
+                    traverse(tmp,voisin2,0,pri_new,voisin2.get_value(),L)
+                    CC = list(set(tmp))
+                    CCpathScore = averagePathScore(CC)
+                    finalScore = new_score + CCpathScore
+                    stitchedSent = canchor + CC
+                    liste.appendd(stitchedSent,finalScore)
+            traverse(liste,voisin,new_score,pri_new,new_sent,L)
+                
+
+
+generator  = Generation_Graphe(["My phone calls drop frequently with the iPhone.","Great device,but the calls drop too frequently."],15)
+
+'''
+generator = Generation_Graphe(["Three Rings for the Elven-kings under the sky","Seven for the Dwarf-lords in their halls of stone","Nine for Mortal Men doomed to die","One for the Dark Lord on his dark throne","One Ring to rule them all, One Ring to find them","One Ring to bring them all and in the darkness bind them","In the Land of Mordor where the Shadows lie."])
+'''
 generator.generation()
-generator.show_informations()
-
+#generator.show_informations()
+generator.generate_valid_path()
 
 
 
