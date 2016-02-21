@@ -1,4 +1,6 @@
-
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+import numpy as np
 
 #input : set of sentence 
 '''
@@ -210,4 +212,106 @@ topic X : generate sentences, pick at most 2 sentences that are least readable
 
 
 '''
+
+import nltk
+
+
+class Etiquette:
+    ids = 0
+    def __init__(self,value,sid,pid,next=-1):
+        self.value = value
+        self.next = []
+        if(not next == -1):
+            self.next.append(next)
+        self.score = []
+        self.score.append((sid,pid))
+        self.id = Etiquette.ids
+        Etiquette.ids +=1
+
+    def get_actual_ids():
+        return Etiquette.ids
+  
+    def get_value(self):
+        return self.value
+  
+    def get_next(self):
+        return self.next
+
+    def get_score(self):
+        return self.score
+  
+    def add_next(self,new_nex):
+        self.next.append(new_nex)
+
+    def add_sid_pid(self,sid,pid):
+        self.score.append((sid,pid))
+  
+    def get_id(self):
+        return self.id
+
+    def show_node_informations(self):
+        print("id :", self.id , "Value : ", self.value , "Next : ", self.next , "Score : ", self.score)
+
+
+class Generation_Graphe:
+
+    def __init__(self,sentences):
+        self.sentences = sentences
+        self.nodes= []
+    
+
+    def isWordIn(self ,word):
+        for node in self.nodes:
+            if(node.get_value() == word):
+                return True
+        return False
+
+    def get_node_with_id(self,ids):
+        for element in nodes:
+            if(element.get_id()==ids):
+                return element
+        raise Exception("Element not found")
+
+    def get_node_with_value(self,value):
+        for element in self.nodes:
+            if(element.get_value()==value):
+                return element
+        raise Exception("Element not found")
+
+    def generation(self):
+        tokenized = [nltk.word_tokenize(self.sentences[i]) for i in range(len(self.sentences))]
+        num_sent  = 1 
+        for sent in tokenized:
+            actual = sent
+            num_word = 1
+            last = None
+            for mot in actual:
+                actual = None
+                if(not self.isWordIn(mot)):
+                    tmp = Etiquette(mot,num_sent,num_word)
+                    self.nodes.append(tmp)
+                    actual = tmp
+                else:
+                     actual = self.get_node_with_value(mot)
+                     actual.add_sid_pid(num_sent,num_word)
+                if(num_word>1):
+                    last.add_next(actual.get_id())
+                last = actual
+                num_word +=1
+            num_sent +=1
+
+    def show_informations(self):
+        for node in self.nodes:
+            node.show_node_informations()
+
+
+generator  = Generation_Graphe(["My phone calls drop frequently with the iPhone.","Great device,but the calls drop too frequently."])
+
+generator.generation()
+generator.show_informations()
+
+
+
+
+
 
