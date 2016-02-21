@@ -214,6 +214,11 @@ topic X : generate sentences, pick at most 2 sentences that are least readable
 '''
 
 import nltk
+import sys
+
+sys.setrecursionlimit(1000)
+print("max recursion limit : ",sys.getrecursionlimit())
+
 
 
 class Etiquette:
@@ -264,6 +269,7 @@ class Generation_Graphe:
         self.punctutation = [".","!","?",";",",","\"",]
         self.conjunction = ["for","and","nor","but","or","yet","so"]
         self.sigr = 2
+        self.linking = ["act","acted","am","appear","appears","appeared to be","are","is being","be","became","become","can be","becomes","come","comes","does","fall","falls","feel","fell","felt","get","go","got","grew","grow","had","had become","had been","had seemed","has","has appeared","has become","has been","have seemed","seems","seemed","indicate","indicates","is","is being","is getting","keep","keeps","look","looks","looked","may be","might be","might have been","must","prove","proves","remain","remains","remained","seem","seems","seemed","seeming","seems","shall","shall be","shall have been","should be","stay","stayed","taste","tasted","turn","was","was being","wax","waxed","went","were","will be","will become","will have become","will have been","will seen","would be"]
     
 
     def isWordIn(self ,word):
@@ -338,26 +344,49 @@ class Generation_Graphe:
                 pathLen = 1
                 score = 0
                 cList = []
-                pri = [nod.get_score()]
-                self.traverse(cList,nod,score,pri,nod.get_value(),pathLen)
+                pri = []
+                pri.append(nod.get_score())
+                print("nod : ",nod.get_value())
+                print("nod : ",nod.get_score())
+                self.traverse(cList,nod,score,pri,nod.get_value(),pathLen,0)
                 candidats.append(cList)
         print(candidats)
 
-    def traverse(self,liste,node,score,pri_overlap,sentence,length):
+    #to complete
+    def inter(self,pri_overlap,new_pri):
+        #print(pri_overlap,"new tri :",new_pri)
+        return []
+
+
+    def path_score(self,q,s):
+        return q*s
+
+
+    def collabisble(self,name):
+       return (name in self.linking) 
+
+    def traverse(self,liste,node,score,pri_overlap,sentence,length,count):
+        '''print("name",node.get_value(),node.get_next())
+        print(count)'''
+        #print("name",node.get_value())
         redudancy = len(pri_overlap)
-        if(redudancy >= self.self.sigr):
-            if(node.get_value() in self.punctutation or node.get_value() in self.conjunction):
+        if(redudancy >= self.sigr):
+            if((node.get_value() in self.punctutation) or (node.get_value() in self.conjunction)):
                 if(valid_sentence(sentence)):
                     final_score = score / length
                     liste.append(sentence,final_score)
+        if(node.get_id()==8):
+            print("mes voisons",node.get_next(),count)
         for element in node.get_next():
+            #print(element)
             voisin = self.get_node_with_id(element)
-            pri_new = pri_overlap inter pri(voisin)
+            pri_new = self.inter(pri_overlap,voisin.get_score())
             redudancy = len(pri_new)
             new_sent = sentence + voisin.get_value()
             L = length + 1
-            new_score = score + path_score(redudancy,L)
-            if(collabisble(voisin)):
+            new_score = score + self.path_score(redudancy,L)
+            print("appel sur ",voisin.get_value())
+            if(self.collabisble(voisin.get_value())):
                 canchor = new_sent
                 tmp = []
                 for vx in voisin.get_next():
@@ -368,7 +397,8 @@ class Generation_Graphe:
                     finalScore = new_score + CCpathScore
                     stitchedSent = canchor + CC
                     liste.appendd(stitchedSent,finalScore)
-            traverse(liste,voisin,new_score,pri_new,new_sent,L)
+            else:
+                self.traverse(liste,voisin,new_score,pri_new,new_sent,L,count+1)
                 
 
 
@@ -383,5 +413,20 @@ generator.generate_valid_path()
 
 
 
+'''('id :', 0, 'Value : ', 'My', 'Next : ', [1], 'Score : ', [(1, 1)])
+('id :', 1, 'Value : ', 'phone', 'Next : ', [2], 'Score : ', [(1, 2)])
+('id :', 2, 'Value : ', 'calls', 'Next : ', [3, 3], 'Score : ', [(1, 3), (2, 6)])
+('id :', 3, 'Value : ', 'drop', 'Next : ', [4, 13], 'Score : ', [(1, 4), (2, 7)])
+('id :', 4, 'Value : ', 'frequently', 'Next : ', [5, 8], 'Score : ', [(1, 5), (2, 9)])
+('id :', 5, 'Value : ', 'with', 'Next : ', [6], 'Score : ', [(1, 6)])
+('id :', 6, 'Value : ', 'the', 'Next : ', [7, 2], 'Score : ', [(1, 7), (2, 5)])
+('id :', 7, 'Value : ', 'iPhone', 'Next : ', [8], 'Score : ', [(1, 8)])
+('id :', 8, 'Value : ', '.', 'Next : ', [], 'Score : ', [(1, 9), (2, 10)])
+('id :', 9, 'Value : ', 'Great', 'Next : ', [10], 'Score : ', [(2, 1)])
+('id :', 10, 'Value : ', 'device', 'Next : ', [11], 'Score : ', [(2, 2)])
+('id :', 11, 'Value : ', ',', 'Next : ', [12], 'Score : ', [(2, 3)])
+('id :', 12, 'Value : ', 'but', 'Next : ', [6], 'Score : ', [(2, 4)])
+('id :', 13, 'Value : ', 'too', 'Next : ', [4], 'Score : ', [(2, 8)])
 
+'''
 
