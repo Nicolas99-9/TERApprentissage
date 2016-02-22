@@ -3,6 +3,7 @@
 import numpy as np
 from tagger import Tagger
 import re
+from operator import itemgetter
 
 
 #input : set of sentence 
@@ -323,14 +324,12 @@ class Generation_Graphe:
             typess = tagger.tag_sent(self.tokenized[i])
             for j in range(len(typess)):
                 word,val = typess[j]
-                print(word,val)
                 if(not word in self.types):
                     self.types[word] = val
                 else:
                     if(not self.types[word] == val):
                         print("kangouuuuuuuuuuuuuuuuuuuuuuuuuuu")
                         self.types[word] = val
-        print(self.types)
         num_sent  = 1 
         for sent in self.tokenized:
             actual = sent
@@ -392,9 +391,15 @@ class Generation_Graphe:
                 sent.append(nod.get_value())
                 self.traverse(cList,nod,score,nod.get_score(),sent,[],False)
                 candidats.append(cList)
-        print(candidats)
+        print("-----------------------------------------")
+        print("")
+        bis = []
+        for i in range(len(candidats)):
+            bis = bis + [candidats[i][j] for j in range(len(candidats[i]))]
+        bis  = sorted(bis,key=itemgetter(1),reverse = True)
+        print(bis[:5])
 
-    
+    '''
     def inter(self,PRIoverlap,PRInode): 
         newPRI=[]    
         GAP  = self.gap
@@ -413,7 +418,79 @@ class Generation_Graphe:
                     newPRI.append(i)
                     break
         return newPRI
+    '''
+    '''def inter(self,left,right):
+       tmp = []
+       #tmp = tmp + left
+       print("left",left,right)
+       pointer = 0
+       for i in range(len(left)):
+           element = left[i]
+           if(pointer > len(right)):
+               break
+           for j in range(pointer,len(right)):
+               eright = right[j]
+               if(eright[0] == element[0]):
+                   if((eright[1] > element[1]) and (abs(eright[1] - element[1]) <= self.gap)):
+                       print("eright",eright)
+                       tmp.append(eright)
+                       pointer = j +1
+                       break
+               else:
+                   if(eright[0] > element[0]):
+                       break
+       print(tmp)
+       return tmp'''
 
+    def inter(self,pri_so_far, pri_node):
+        """
+        Get the overlapping part between pri_so_far and pri_node
+        pri_so_far: a list of path, path is represented by a list of (sid, pid).
+        pri_node: a list of (sid, pid), this is the presence and position information of the node.
+        """
+        GAP = self.gap
+        pri_new = []
+        for pri in pri_so_far:
+            last_sid, last_pid = pri
+            for sid, pid in pri_node:
+                if sid == last_sid and pid - last_pid > 0 and pid - last_pid <= GAP:
+                    pri_new.append((sid, pid))
+        return pri_new
+        
+    '''
+         */   public List<int[]> getNodeOverlap(List<int[]> left, List<int[]> right)
+/*     */   {
+/* 115 */     List<int[]> l3 = new ArrayList();
+/* 117 */     int pointer = 0;
+/* 119 */     for (int i = 0; i < left.size(); i++) {
+/* 120 */       int[] eleft = (int[])left.get(i);
+/* 122 */       if (pointer > right.size()) {
+/*     */         break;
+/*     */       }
+/* 126 */       for (int j = pointer; j < right.size(); j++)
+/*     */       {
+/* 128 */         int[] eright = (int[])right.get(j);
+/* 130 */         if (eright[0] == eleft[0])
+/*     */         {
+/* 134 */           if ((eright[1] > eleft[1]) && (Math.abs(eright[1] - eleft[1]) <= OpinosisSettings.CONFIG_PERMISSABLE_GAP))
+/*     */           {
+/* 136 */             l3.add(eright);
+/* 137 */             pointer = j + 1;
+/* 138 */             break;
+/*     */           }
+/* 141 */           eright[1];eleft[1];
+/*     */         }
+/*     */         else
+/*     */         {
+/* 148 */           if (eright[0] > eleft[0]) {
+/*     */             break;
+/*     */           }
+/*     */         }
+/*     */       }
+/*     */     }
+/* 155 */     return l3;
+/*     */   }
+'''
 
 
 
@@ -437,9 +514,7 @@ class Generation_Graphe:
         if t in set(["TO", "VBZ", "IN", "CC", "WDT", "PRP", "DT", ","]):
             return False
         sent= " ".join(sent)
-        print(sent)
         if re.match(".*(/NN|/NNS|/NNP|/NNPS)+.*(/VB)+.*(/JJ|/RB|/JJR|/JJS)+.*", sent):
-            print("match 1 ")
             return True
         elif re.match(".*(/PRP|/DT)+.*(/VB)+.*(/RB|/JJ)+.*(/NN)+.*", sent):
             return True
@@ -472,6 +547,7 @@ class Generation_Graphe:
             if((node.get_value() in self.punctutation) or (node.get_value() in self.conjunction)):
                 if(self.valid_sentence(sentence)):
                     final_score = score / float(len(sentence))
+                    del sentence[-1]
                     ph = [" ".join(sentence)]
                     liste.append((ph,final_score))
                 else:
@@ -480,33 +556,54 @@ class Generation_Graphe:
             if(element not in alread_visited):
                 voisin = self.get_node_with_id(element)
                 pri_new = self.inter(pri_overlap,voisin.get_score())
+                #print("pri new : ",pri_new)
                 redudancy = len(pri_new)
                 new_sent = sentence[:]
+                #print("new sent : ",new_sent, "voisin.get_value()",voisin.get_value())
                 new_sent.append(voisin.get_value())
                 new_score = score + self.path_score(redudancy,len(new_sent))
                 if(self.collabisble(voisin.get_value()) and not collapsed):
                     canchor = new_sent
                     tmp = []
-                    score = new_score + path_score(redudancy,len(new_sent)+1)
+                    score = new_score + self.path_score(redudancy,len(new_sent)+1)
                     for vx in voisin.get_next():
-                        voisin2 = self.get_node_with_id(vx)
-                        #self.traverse(tmp,voisin2,0,pri_new,voisin2.get_value(),L,count+1,alread_visited)
-                        CC = list(set(tmp))
-                        #print("CCCCC",CC)
-                        CCpathScore = self.averagePathScore(CC)
-                        finalScore = new_score + CCpathScore
-                        stitchedSent = canchor + str(CC)
-                        liste.append((stitchedSent,finalScore))
+                        if(vx not in alread_visited):
+                            voisin2 = self.get_node_with_id(vx)
+                            self.traverse(tmp,voisin2,0,pri_new,[voisin2.get_value()],alread_visited,True)
+                            #print("tmp : ",tmp)
+                            CC = []
+                            #print("CCCCC",CC)
+                            CCpathScore = self.averagePathScore(CC)
+                            finalScore = new_score + CCpathScore
+                            stitchedSent = canchor + CC
+                            liste.append((stitchedSent,finalScore))
                 else:
                     self.traverse(liste,voisin,new_score,pri_new,new_sent,alread_visited,False)
 
 
+
+
+#summary : calls drop frequently
 generator  = Generation_Graphe(["My phone calls drop frequently with the iPhone.","Great device,but the calls drop too frequently."],15)
+
+
+#generator  = Generation_Graphe(["My phone calls drop frequently with the iPhone and the battery is small.","Great device,but the calls drop too frequently and battery is enifficient."],15)
+
 
 '''
 generator = Generation_Graphe(["Three Rings for the Elven-kings under the sky","Seven for the Dwarf-lords in their halls of stone","Nine for Mortal Men doomed to die","One for the Dark Lord on his dark throne","One Ring to rule them all, One Ring to find them","One Ring to bring them all and in the darkness bind them","In the Land of Mordor where the Shadows lie."])
 '''
 
+import codecs
+def read_files(filename):
+    result = []
+    with codecs.open(filename,"r",encoding='utf-8') as my_file:
+        for line in my_file:
+            result.append(line.strip())
+    return result
+
+
+#generator  = Generation_Graphe(read_files("accuracy_garmin_nuvi_255W_gps.txt.data")[:2],15)
 #generator  = Generation_Graphe(["the screen is very clear","the screen is big"],15)
 generator.generation()
 generator.show_informations()
