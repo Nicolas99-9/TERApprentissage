@@ -443,17 +443,13 @@ class Generation_Graphe:
        return tmp'''
 
     def inter(self,pri_so_far, pri_node):
-        """
-        Get the overlapping part between pri_so_far and pri_node
-        pri_so_far: a list of path, path is represented by a list of (sid, pid).
-        pri_node: a list of (sid, pid), this is the presence and position information of the node.
-        """
         GAP = self.gap
         pri_new = []
         for pri in pri_so_far:
             last_sid, last_pid = pri
             for sid, pid in pri_node:
-                if sid == last_sid and pid - last_pid > 0 and pid - last_pid <= GAP:
+                #if sid == last_sid and pid - last_pid >=  0 and abs(pid - last_pid) <= GAP:
+                if sid == last_sid and abs(pid - last_pid) <= GAP:
                     pri_new.append((sid, pid))
         return pri_new
         
@@ -514,13 +510,20 @@ class Generation_Graphe:
         if t in set(["TO", "VBZ", "IN", "CC", "WDT", "PRP", "DT", ","]):
             return False
         sent= " ".join(sent)
-        if re.match(".*(/NN|/NNS|/NNP|/NNPS)+.*(/VB)+.*(/JJ|/RB|/JJR|/JJS)+.*", sent):
+        print("sentenc",sent)
+        if re.match(".*(/NN|/NNS|/NNP|/NNPS)+.*(/VB|/BEZ|/BER)+.*(/JJ|/RB|/JJR|/JJS)+.*", sent):
             return True
-        elif re.match(".*(/PRP|/DT)+.*(/VB)+.*(/RB|/JJ)+.*(/NN)+.*", sent):
+        elif re.match(".*(/PRP|/DT)+.*(/VB)+.*(/RB|/JJ)+.*(/NN|/NNS|/NNP|/NNPS)+.*", sent):
             return True
-        elif re.match(".*(/JJ)+.*(/TO)+.*(/VB).*", sent):
+        elif re.match(".*(/JJ)*.*(/TO)+.*(/VB|/BEZ|/BER).*", sent):
             return True
-        elif re.match(".*(/RB)+.*(/IN)+.*(/NN)+.*", sent):
+        elif re.match(".*(/JJ)+.*(/NN|/NNS|/NNP|/NNPS)+.*(/VB)+.*(/JJ|/JJR|/JJS)+.*", sent):
+            return True
+        elif re.match(".*(/RB)+.*(/IN)+.*(/NN|/NNS|/NNP|/NNPS)+.*", sent):
+            return True
+        elif (not(re.match(".*(/DT).*",sent)) and (re.match(".*(/RB)*.*(/JJ)+.*(/NN|/NNS|/NNP|/NNPS)+.*", sent))):
+            return True
+        if re.match(".*(/AT)*.*(/NN|/NNS|/NNP|/NNPS)+.*(/VB|/BEZ|/BER)+.*(/QL|/RB|/RBR|/RBS)+.*(/JJ|/JJR|/JJS|/QL)+.*", sent):
             return True
         else:
             return False
@@ -538,6 +541,7 @@ class Generation_Graphe:
 
     def traverse(self,liste,node,score,pri_overlap,sentence,alread_visited,collapsed):
         redudancy = len(pri_overlap)
+        print(node.get_value(),redudancy,pri_overlap)
         #print("redondace,n",redudancy,node.get_value(),pri_overlap)
         if(not self.is_finishing_char(node.get_value())):
             alread_visited.append(node.get_id())
@@ -545,6 +549,7 @@ class Generation_Graphe:
         if(redudancy >= self.sigr):
             #print("ok ajout")
             if((node.get_value() in self.punctutation) or (node.get_value() in self.conjunction)):
+                print("sentence,",sentence)
                 if(self.valid_sentence(sentence)):
                     final_score = score / float(len(sentence))
                     del sentence[-1]
@@ -556,7 +561,7 @@ class Generation_Graphe:
             if(element not in alread_visited):
                 voisin = self.get_node_with_id(element)
                 pri_new = self.inter(pri_overlap,voisin.get_score())
-                #print("pri new : ",pri_new)
+                #print("pri new : ",pri_new,pri_overlap,voisin.get_score())
                 redudancy = len(pri_new)
                 new_sent = sentence[:]
                 #print("new sent : ",new_sent, "voisin.get_value()",voisin.get_value())
@@ -565,18 +570,24 @@ class Generation_Graphe:
                 if(self.collabisble(voisin.get_value()) and not collapsed):
                     canchor = new_sent
                     tmp = []
-                    score = new_score + self.path_score(redudancy,len(new_sent)+1)
+                    anch_score = new_score + self.path_score(redudancy,len(new_sent)+1)
                     for vx in voisin.get_next():
                         if(vx not in alread_visited):
                             voisin2 = self.get_node_with_id(vx)
-                            self.traverse(tmp,voisin2,0,pri_new,[voisin2.get_value()],alread_visited,True)
-                            #print("tmp : ",tmp)
-                            CC = []
-                            #print("CCCCC",CC)
-                            CCpathScore = self.averagePathScore(CC)
-                            finalScore = new_score + CCpathScore
-                            stitchedSent = canchor + CC
-                            liste.append((stitchedSent,finalScore))
+                            #print("debug pri_tm,",pri_new,voisin2.get_score())
+                            pri_tm = self.inter(pri_new,voisin2.get_score())
+                            tmp_sent = new_sent[:]
+                            tmp_sent.append(voisin2.get_value())
+                            #print("cest parti",voisin2.get_value(),pri_tm,tmp_sent)
+                            self.traverse(tmp,voisin2,anch_score,pri_tm,tmp_sent,alread_visited,True)
+                    if(len(tmp)>0):
+                         print("TMP NOT NULL",tmp)
+                         CCpathScore = self.averagePathScore(tmp)
+                         finalScore = anch_score/len(new_sent) + CCpathScore
+                         stitchedSent = canchor + tmp
+                         liste.append((stitchedSent,finalScore))
+                    else:
+                         print("TMP IS NULL")
                 else:
                     self.traverse(liste,voisin,new_score,pri_new,new_sent,alread_visited,False)
 
@@ -584,7 +595,7 @@ class Generation_Graphe:
 
 
 #summary : calls drop frequently
-generator  = Generation_Graphe(["My phone calls drop frequently with the iPhone.","Great device,but the calls drop too frequently."],15)
+#generator  = Generation_Graphe(["My phone calls drop frequently with the iPhone.","Great device,but the calls drop too frequently."],15)
 
 
 #generator  = Generation_Graphe(["My phone calls drop frequently with the iPhone and the battery is small.","Great device,but the calls drop too frequently and battery is enifficient."],15)
@@ -604,7 +615,8 @@ def read_files(filename):
 
 
 #generator  = Generation_Graphe(read_files("accuracy_garmin_nuvi_255W_gps.txt.data")[:2],15)
-#generator  = Generation_Graphe(["the screen is very clear","the screen is big"],15)
+#generator  = Generation_Graphe(["the screen is very clear.","the tv is big.","the screen is very clear.","the shop is big."],15)
+generator  = Generation_Graphe(["the screen is very clear.","the tv is big.","the screen is very clear.","the tv is big."],15)
 generator.generation()
 generator.show_informations()
 generator.generate_valid_path()
