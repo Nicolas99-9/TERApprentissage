@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import numpy as np
+from tagger import Tagger
+import re
+
 
 #input : set of sentence 
 '''
@@ -314,6 +317,20 @@ class Generation_Graphe:
     def generation(self):
         self.tokenized = [nltk.word_tokenize(self.sentences[i]) for i in range(len(self.sentences))]
         self.generate_average_position()
+        self.types = {}
+        tagger = Tagger(False)
+        for i in range(len(self.tokenized)):
+            typess = tagger.tag_sent(self.tokenized[i])
+            for j in range(len(typess)):
+                word,val = typess[j]
+                print(word,val)
+                if(not word in self.types):
+                    self.types[word] = val
+                else:
+                    if(not self.types[word] == val):
+                        print("kangouuuuuuuuuuuuuuuuuuuuuuuuuuu")
+                        self.types[word] = val
+        print(self.types)
         num_sent  = 1 
         for sent in self.tokenized:
             actual = sent
@@ -368,6 +385,7 @@ class Generation_Graphe:
                 #pri = []
                 #pri.append(nod.get_score())
                 print("nod : ",nod.get_value())
+                print("---------------------------------")
                 #print("nod : ",nod.get_score())
                 #self.show_informations()
                 sent = []
@@ -376,45 +394,7 @@ class Generation_Graphe:
                 candidats.append(cList)
         print(candidats)
 
-
-    #to complete
-    #bug only compare with the last element of the old list
-    '''def inter(self,pri_overlap,new_pri):
-        ajout = True
-        #print("debug",pri_overlap,new_pri)
-        if(len(new_pri) != self.nb_sent):
-            return pri_overlap
-        for element in pri_overlap:
-            if(len(element) != self.nb_sent):
-                #print("devient false")
-                ajout  = False
-            for i  in range(len(element)):
-                sid,pid = element[i]
-                if(len(new_pri)>=sid):
-                    sid2,pid2 = new_pri[sid-1]
-                    if(abs(pid-pid2)> self.gap):
-                        ajout = False
-        if(ajout):
-            pri_overlap.append(new_pri)
-        return pri_overlap'''
-    '''
-    def inter(self,pri_overlap,new_pri):
-        ajout = True
-        if(len(new_pri) != self.nb_sent):
-            return pri_overlap
-        last = len(pri_overlap)-1
-        if(len(pri_overlap[last]) != self.nb_sent):
-            return pri_overlap
-        for i  in range(len(pri_overlap[last])):
-            sid,pid = pri_overlap[last][i]
-            if(len(new_pri)>=sid):
-                sid2,pid2 = new_pri[sid-1]
-                if(abs(pid-pid2)> self.gap):
-                    ajout = False
-        if(ajout):
-            pri_overlap.append(new_pri)
-        return pri_overlap
-        '''
+    
     def inter(self,PRIoverlap,PRInode): 
         newPRI=[]    
         GAP  = self.gap
@@ -444,8 +424,32 @@ class Generation_Graphe:
     def collabisble(self,name):
        return (name in self.linking) 
 
+
+    #Function to Validate sentence    
     def valid_sentence(self,sentence):
-        return True
+        sent=[]    
+        for i in sentence:
+            pos_tag= self.types[i]
+            sent=sent[:]
+            sent.append(i+'/'+pos_tag)
+        last=sent[-1]
+        w,t=last.split("/")
+        if t in set(["TO", "VBZ", "IN", "CC", "WDT", "PRP", "DT", ","]):
+            return False
+        sent= " ".join(sent)
+        print(sent)
+        if re.match(".*(/NN|/NNS|/NNP|/NNPS)+.*(/VB)+.*(/JJ|/RB|/JJR|/JJS)+.*", sent):
+            print("match 1 ")
+            return True
+        elif re.match(".*(/PRP|/DT)+.*(/VB)+.*(/RB|/JJ)+.*(/NN)+.*", sent):
+            return True
+        elif re.match(".*(/JJ)+.*(/TO)+.*(/VB).*", sent):
+            return True
+        elif re.match(".*(/RB)+.*(/IN)+.*(/NN)+.*", sent):
+            return True
+        else:
+            return False
+        return False
 
     def is_finishing_char(self,mot):
         return (mot in self.punctutation or mot in self.conjunction)
@@ -459,7 +463,7 @@ class Generation_Graphe:
 
     def traverse(self,liste,node,score,pri_overlap,sentence,alread_visited,collapsed):
         redudancy = len(pri_overlap)
-        print("redondace,n",redudancy,node.get_value(),pri_overlap)
+        #print("redondace,n",redudancy,node.get_value(),pri_overlap)
         if(not self.is_finishing_char(node.get_value())):
             alread_visited.append(node.get_id())
         #print(node.get_value(),pri_overlap,sentence)
@@ -470,6 +474,8 @@ class Generation_Graphe:
                     final_score = score / float(len(sentence))
                     ph = [" ".join(sentence)]
                     liste.append((ph,final_score))
+                else:
+                    print("phrase rejete =) ",sentence)
         for element in node.get_next():
             if(element not in alread_visited):
                 voisin = self.get_node_with_id(element)
@@ -478,7 +484,6 @@ class Generation_Graphe:
                 new_sent = sentence[:]
                 new_sent.append(voisin.get_value())
                 new_score = score + self.path_score(redudancy,len(new_sent))
-                #print("appel sur ",voisin.get_value())
                 if(self.collabisble(voisin.get_value()) and not collapsed):
                     canchor = new_sent
                     tmp = []
@@ -504,7 +509,7 @@ generator = Generation_Graphe(["Three Rings for the Elven-kings under the sky","
 
 #generator  = Generation_Graphe(["the screen is very clear","the screen is big"],15)
 generator.generation()
-#generator.show_informations()
+generator.show_informations()
 generator.generate_valid_path()
 #generator.show_informations()
 
@@ -524,6 +529,14 @@ generator.generate_valid_path()
 ('id :', 11, 'Value : ', ',', 'Next : ', [12], 'Score : ', [(2, 3)])
 ('id :', 12, 'Value : ', 'but', 'Next : ', [6], 'Score : ', [(2, 4)])
 ('id :', 13, 'Value : ', 'too', 'Next : ', [4], 'Score : ', [(2, 8)])
+
+'''
+
+'''
+[u'calls/VBZ', u'drop/VB', u'frequently/RB', u'with/IN', u'the/AT', 'iPhone/NN', u'./.']
+[u'calls/VBZ', u'drop/VB', u'frequently/RB', u'./.']
+('phrase rejete =) ', ['calls', 'drop', 'frequently', '.'])
+('nod : ', 'drop')
 
 '''
 
