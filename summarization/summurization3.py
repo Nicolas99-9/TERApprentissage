@@ -453,42 +453,6 @@ class Generation_Graphe:
                     pri_new.append((sid, pid))
         return pri_new
         
-    '''
-         */   public List<int[]> getNodeOverlap(List<int[]> left, List<int[]> right)
-/*     */   {
-/* 115 */     List<int[]> l3 = new ArrayList();
-/* 117 */     int pointer = 0;
-/* 119 */     for (int i = 0; i < left.size(); i++) {
-/* 120 */       int[] eleft = (int[])left.get(i);
-/* 122 */       if (pointer > right.size()) {
-/*     */         break;
-/*     */       }
-/* 126 */       for (int j = pointer; j < right.size(); j++)
-/*     */       {
-/* 128 */         int[] eright = (int[])right.get(j);
-/* 130 */         if (eright[0] == eleft[0])
-/*     */         {
-/* 134 */           if ((eright[1] > eleft[1]) && (Math.abs(eright[1] - eleft[1]) <= OpinosisSettings.CONFIG_PERMISSABLE_GAP))
-/*     */           {
-/* 136 */             l3.add(eright);
-/* 137 */             pointer = j + 1;
-/* 138 */             break;
-/*     */           }
-/* 141 */           eright[1];eleft[1];
-/*     */         }
-/*     */         else
-/*     */         {
-/* 148 */           if (eright[0] > eleft[0]) {
-/*     */             break;
-/*     */           }
-/*     */         }
-/*     */       }
-/*     */     }
-/* 155 */     return l3;
-/*     */   }
-'''
-
-
 
     def path_score(self,redundancy,length):
         return np.log2(length) * redundancy
@@ -510,7 +474,6 @@ class Generation_Graphe:
         if t in set(["TO", "VBZ", "IN", "CC", "WDT", "PRP", "DT", ","]):
             return False
         sent= " ".join(sent)
-        print("sentenc",sent)
         if re.match(".*(/NN|/NNS|/NNP|/NNPS)+.*(/VB|/BEZ|/BER)+.*(/JJ|/RB|/JJR|/JJS)+.*", sent):
             return True
         elif re.match(".*(/PRP|/DT)+.*(/VB)+.*(/RB|/JJ)+.*(/NN|/NNS|/NNP|/NNPS)+.*", sent):
@@ -538,18 +501,34 @@ class Generation_Graphe:
 
     def get_path_from_node_until_end(self,node):
         pass
+    
+    def stitch(self,anchor,tmp):
+        result = anchor[:]
+        somme = reduce(lambda a, b: a + len(b), anchor, 0)+(len(anchor))
+        tmpMots = []
+        for i in range(len(tmp)):
+            tmpMots.append(tmp[i][0][0][somme:])
+        tmpMots = (list(set(tmpMots)))
+        for i in range(len(tmpMots)):
+            if(i==0):
+                result = result + nltk.word_tokenize(tmpMots[i])
+            elif(i < len(tmpMots)-1):
+                result.append(",")
+                result = result + nltk.word_tokenize(tmpMots[i])
+            else:
+                result.append("and")
+                result = result + nltk.word_tokenize(tmpMots[i])
+        print(result)
+        return result
+
 
     def traverse(self,liste,node,score,pri_overlap,sentence,alread_visited,collapsed):
         redudancy = len(pri_overlap)
-        print(node.get_value(),redudancy,pri_overlap)
-        #print("redondace,n",redudancy,node.get_value(),pri_overlap)
         if(not self.is_finishing_char(node.get_value())):
             alread_visited.append(node.get_id())
-        #print(node.get_value(),pri_overlap,sentence)
         if(redudancy >= self.sigr):
             #print("ok ajout")
             if((node.get_value() in self.punctutation) or (node.get_value() in self.conjunction)):
-                print("sentence,",sentence)
                 if(self.valid_sentence(sentence)):
                     final_score = score / float(len(sentence))
                     del sentence[-1]
@@ -574,22 +553,19 @@ class Generation_Graphe:
                     for vx in voisin.get_next():
                         if(vx not in alread_visited):
                             voisin2 = self.get_node_with_id(vx)
-                            #print("debug pri_tm,",pri_new,voisin2.get_score())
                             pri_tm = self.inter(pri_new,voisin2.get_score())
                             tmp_sent = new_sent[:]
                             tmp_sent.append(voisin2.get_value())
                             #print("cest parti",voisin2.get_value(),pri_tm,tmp_sent)
+                            #print("appell recusrif collapse",pri_tm,tmp_sent)
                             self.traverse(tmp,voisin2,anch_score,pri_tm,tmp_sent,alread_visited,True)
                     if(len(tmp)>0):
-                         print("TMP NOT NULL",tmp)
                          CCpathScore = self.averagePathScore(tmp)
                          finalScore = anch_score/len(new_sent) + CCpathScore
-                         stitchedSent = canchor + tmp
+                         stitchedSent = self.stitch(canchor,tmp)
                          liste.append((stitchedSent,finalScore))
-                    else:
-                         print("TMP IS NULL")
                 else:
-                    self.traverse(liste,voisin,new_score,pri_new,new_sent,alread_visited,False)
+                    self.traverse(liste,voisin,new_score,pri_new,new_sent,alread_visited,collapsed)
 
 
 
@@ -616,7 +592,7 @@ def read_files(filename):
 
 #generator  = Generation_Graphe(read_files("accuracy_garmin_nuvi_255W_gps.txt.data")[:2],15)
 #generator  = Generation_Graphe(["the screen is very clear.","the tv is big.","the screen is very clear.","the shop is big."],15)
-generator  = Generation_Graphe(["the screen is very clear.","the tv is big.","the screen is very clear.","the tv is big."],15)
+#generator  = Generation_Graphe(["the screen is very clear.","the screen is big.","the screen is very clear.","the screen is big."],15)
 generator.generation()
 generator.show_informations()
 generator.generate_valid_path()
