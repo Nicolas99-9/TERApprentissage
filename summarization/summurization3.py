@@ -4,218 +4,9 @@ import numpy as np
 from tagger import Tagger
 import re
 from operator import itemgetter
-
+from collections import Counter
 
 #input : set of sentence 
-'''
-generate a graph of the sentence,graph with their relations in the sentence
-find promising (candiate summaries) and score these candidates
-select top scoring as final summary
-
-graph generation :
-
-Takes 2 sentences about the same subject (phone batteries)
-
-My  phone calls drop frequently with the iPhone
-
-my : node unique word SID : 1 , PID : 1 (position reference information)
-
-phone : node unique word with arrow from "my" to "phone", SID : 1 , PID : 2
-
-calls : node unique word with arrow from "phone" to "calss", SID : 1 , PID : 3
-
-drop : SID : 1 , PID : 4
-
-frequently :  1 : 5
-
-with : 1:6
-
-the : 1:7
-
-ihpone : 1 :8
-
-.      1:9
-
-Second sentence : Great  device, but the calls drop too frequently .
-
-Greate (2:1) -> device (2:2) -> , (2:3) -> (2;4)
-
-The already in the graph => arrow from "but" to "the" , new value of the node "the" : 2:5
-
-Calls : arrow from the last value (the) to calls, new calls value : 2.6
-
-Drop : arrow from the last value (calls) to the existing node :  drop, new calls value : 2.7
-
-Too : node creation from "drop" to "too" (2:8)
-
- 
-Frequently : node from "too" to the existing node " frequently" (2:9)
-
-Node from frequently to the node "." (2:10)
-
-Keep the old values when create a new arrow to an existing node"
-
-
-PART 2 
------------------------------------------------
-Naturally captures redundancies
-
-"calls drop frequently" , a sequence of words with 2 labels calls(1:3,2:6) drop (1:4,2:7) frequentyl (1:5,2:9)
-
-easily discover redudencies for high confidence summaries
----------------------------------------------------
-Captures gapped subsequences : calls drop frequently , calls drop too
-frequently
-
-In a sequence of two similars words, compute the gap between the words , 2 is the maximum
-
-                     too(2:8)
-
- calls(1:3,2:6) drop (1:4,2:7) frequentyl (1:5,2:9)
-
-gap drop frequently : 2
-
-discovery of new sentences
-------------------------------------------------------
-Captures collapsible structures
-
-1. Calls drop frequently with the 
-iPhone
-2. Calls drop frequently with the 
-Black Berry
- 
-same graph with only one difference at the node "the"
-
-high redudancy path => hub like node (the) => high fan out
-
-Add "and" : 
-
-generate calls drop frequently with the iphone AND the black berry
-
-----------------------------------------------------
-Generate candidates summaries:
-
-1)Repeatedly search the Opinosis- Graph for a   Valid Path
-Valid path : set of connected nodes
-Has a valid start node (VSN)
-Natural starting point of a sentence,Opinosis uses average positional information
-Has a valid end node (VEN)
-Point that completes a sentence, opinosis uses punctuations and conjunctions
-
-
-Finding candidates summaries : 
-
- , calls drop frequently with the iphone .
-
-Steps : 
-
-, : VSN ? NO
-calls VSN ? YES
-drop : VEN ? NO
-...
-with : VEN ? NO
-...
-. : VEN ? YES
-
-candidate summary : "calls drop frequently with the iphone ."
-
-USING THIS candidate, we generate a pool of candidates summaries, 
-
-calls drop frequently
-calls drop frequently with the iphone .
-drop frequently with the...
-
-Some paths are collapsible : we need to indentify such paths
-
-Identify a collapsible strucutre:
-
-find collapsible nodes (hub-likes nodes) during traversal
-Opinosis treat linking verbs (are...) as collapsible nodes (Linking verbs have hub like properties)
-
-
-collapsible structure :
- the screen is very clear
-               big 
-(is is a collapsible node)
-
-Two valid paths : 
- the screen is very clear
- the screen is very big
-
-Anchor : the screen, collapsible node : is , collapsed candidate CC) : very clear or very big
-
-candidate summary : the screen is very clear and big
-
-How to collapse ? 
-- Linking verbs : the screen is very clear, bright, big
-
-- Better readabilty : the screen is very clear, bright and big
-
-- Use existing Opinosis - Graph
-  Find conjunction that  appears most  frequently  with last collapsed candidate
-
-  The screen is very ... big ? find the words linked to big (yet ?, and ? ,but ?)
-
-----------------------------------------------------
-
-Score candidate summaries :
-
-2 types of scoring:
-
-high confidence summaries : 
-Select  candidates with high redundancy # of sentences sharing same path , controlled by gap threshold,  σ gap
-
-good coverage : Select  longer sentences level of  redundancy *  length of candidate paths Favor longer but redundant sentences
-
-
-Gap requirement : σ(gap)
-
-gap vary bewteen sentences sharing nodes
-
-        W1 -> w2 -> w3
-sen 1       1     2
-sen 2       m     n
-            gap   gap
-
-σ(gap) enforces maximum allwoed gap bewteen two adjacents nodes (<1 ok , > 4 not ok)
-
-
-LAST STEP : select top 2 scoring candidates that are most dissimilar
-
-DATASET CONSTRUCTION
-
-INPU : a review document about the same topic : 4 sentences
-
-Ouput : a concise (25 words) abstractive opinion summary
-
-
-
-USEMEAD : extractive based method , selects  sentences that capture most enssential information , select 2 sentences as the summary
-
-Evaluation measures : 
-
-----------------
-rouge 1 - 2 - 3
-
-standart measure (agreement beetween system and human summaries)
-
-readabilty test : how 
-----------------
-
-
-GAP threshold : 2 - 4 ok 
-gap too large : ill formed sentence
-
-
-Scoring function : redudancy and path length (performs better) , only redudancy 
-
-how readability test works : 
-
-topic X : generate sentences, pick at most 2 sentences that are least readable
-
-
-
-'''
 
 import nltk
 import sys
@@ -250,7 +41,8 @@ class Etiquette:
         return self.score
   
     def add_next(self,new_nex):
-        self.next.append(new_nex)
+        if(not new_nex in self.next):
+            self.next.append(new_nex)
 
     def add_sid_pid(self,sid,pid):
         self.score.append((sid,pid))
@@ -275,7 +67,7 @@ class Generation_Graphe:
         self.sigr = 2
         self.gap = 4
         self.nb_sent = len(sentences)
-        self.linking = ["act","acted","am","appear","appears","appeared to be","are","is being","be","became","become","can be","becomes","come","comes","does","fall","falls","feel","fell","felt","get","go","got","grew","grow","had","had become","had been","had seemed","has","has appeared","has become","has been","have seemed","seems","seemed","indicate","indicates","is","is being","is getting","keep","keeps","look","looks","looked","may be","might be","might have been","must","prove","proves","remain","remains","remained","seem","seems","seemed","seeming","seems","shall","shall be","shall have been","should be","stay","stayed","taste","tasted","turn","was","was being","wax","waxed","went","were","will be","will become","will have become","will have been","will seen","would be"]
+        self.linking = ["act","acted","am","appear","appears","appeared to be","are","is being","be","became","become","can be","becomes","come","comes","does","fall","falls","feel","fell","felt","go","got","grew","grow","had","had become","had been","had seemed","has appeared","become","have seemed","seems","seemed","indicate","indicates","is","is being","is getting","keep","keeps","look","looks","looked","may be","might be","might have been","must","prove","proves","remain","remains","remained","seem","seems","seemed","seeming","seems","shall","shall be","shall have been","should be","stay","stayed","taste","tasted","turn","was","was being","wax","waxed","went","were","will be","will become","will have become","will have been","will seen","would be"]
     
 
     def isWordIn(self ,word):
@@ -325,11 +117,13 @@ class Generation_Graphe:
             for j in range(len(typess)):
                 word,val = typess[j]
                 if(not word in self.types):
-                    self.types[word] = val
+                    self.types[word] = []
+                    self.types[word].append(val)
                 else:
-                    if(not self.types[word] == val):
-                        print("kangouuuuuuuuuuuuuuuuuuuuuuuuuuu")
-                        self.types[word] = val
+                    self.types[word].append(val)
+        for element in self.types:
+            most_common,num_most_common = Counter(self.types[element]).most_common(1)[0] 
+            self.types[element] =most_common
         num_sent  = 1 
         for sent in self.tokenized:
             actual = sent
@@ -383,8 +177,8 @@ class Generation_Graphe:
                 cList = []
                 #pri = []
                 #pri.append(nod.get_score())
-                print("nod : ",nod.get_value())
-                print("---------------------------------")
+                #print("nod : ",nod.get_value())
+                #print("---------------------------------")
                 #print("nod : ",nod.get_score())
                 #self.show_informations()
                 sent = []
@@ -398,49 +192,8 @@ class Generation_Graphe:
             bis = bis + [candidats[i][j] for j in range(len(candidats[i]))]
         bis  = sorted(bis,key=itemgetter(1),reverse = True)
         print(bis[:5])
-
-    '''
-    def inter(self,PRIoverlap,PRInode): 
-        newPRI=[]    
-        GAP  = self.gap
-        for i in PRIoverlap:
-            isid,ipid=i
-            for j in PRInode:
-                jsid,jpid=j
-                if jsid==isid and jpid-ipid>0 and jpid-ipid <= GAP:
-                    newPRI.append(i)
-                break
-        
-        for i in PRInode:
-            isid,ipid=i
-            for jsid,jpid in PRIoverlap:
-                if jsid==isid and ipid-jpid>0 and ipid-jpid <= GAP:
-                    newPRI.append(i)
-                    break
-        return newPRI
-    '''
-    '''def inter(self,left,right):
-       tmp = []
-       #tmp = tmp + left
-       print("left",left,right)
-       pointer = 0
-       for i in range(len(left)):
-           element = left[i]
-           if(pointer > len(right)):
-               break
-           for j in range(pointer,len(right)):
-               eright = right[j]
-               if(eright[0] == element[0]):
-                   if((eright[1] > element[1]) and (abs(eright[1] - element[1]) <= self.gap)):
-                       print("eright",eright)
-                       tmp.append(eright)
-                       pointer = j +1
-                       break
-               else:
-                   if(eright[0] > element[0]):
-                       break
-       print(tmp)
-       return tmp'''
+        print("les autres : ")
+        print(bis)
 
     def inter(self,pri_so_far, pri_node):
         GAP = self.gap
@@ -471,10 +224,13 @@ class Generation_Graphe:
             sent.append(i+'/'+pos_tag)
         last=sent[-1]
         w,t=last.split("/")
-        if t in set(["TO", "VBZ", "IN", "CC", "WDT", "PRP", "DT", ","]):
+        if t in set(["TO", "VBZ", "IN", "CC", "WDT", "PRP", "DT"]):
+            print("rejete avant",sentence,t,w)
             return False
         sent= " ".join(sent)
-        if re.match(".*(/NN|/NNS|/NNP|/NNPS)+.*(/VB|/BEZ|/BER)+.*(/JJ|/RB|/JJR|/JJS)+.*", sent):
+        print("sentence",sent)
+        #remove VBZ
+        if re.match(".*(/NN|/NNS|/NNP|/NNPS|/VBZ)+.*(/VB|/BEZ|/BER)+.*(/JJ|/RB|/JJR|/JJS)+.*", sent):
             return True
         elif re.match(".*(/PRP|/DT)+.*(/VB)+.*(/RB|/JJ)+.*(/NN|/NNS|/NNP|/NNPS)+.*", sent):
             return True
@@ -518,7 +274,7 @@ class Generation_Graphe:
             else:
                 result.append("and")
                 result = result + nltk.word_tokenize(tmpMots[i])
-        print(result)
+        #print(result)
         return result
 
 
@@ -526,6 +282,7 @@ class Generation_Graphe:
         redudancy = len(pri_overlap)
         if(not self.is_finishing_char(node.get_value())):
             alread_visited.append(node.get_id())
+        #print("actual node",node.get_value(),node.get_id())
         if(redudancy >= self.sigr):
             #print("ok ajout")
             if((node.get_value() in self.punctutation) or (node.get_value() in self.conjunction)):
@@ -535,37 +292,40 @@ class Generation_Graphe:
                     ph = [" ".join(sentence)]
                     liste.append((ph,final_score))
                 else:
-                    print("phrase rejete =) ",sentence)
-        for element in node.get_next():
-            if(element not in alread_visited):
-                voisin = self.get_node_with_id(element)
-                pri_new = self.inter(pri_overlap,voisin.get_score())
-                #print("pri new : ",pri_new,pri_overlap,voisin.get_score())
-                redudancy = len(pri_new)
-                new_sent = sentence[:]
-                #print("new sent : ",new_sent, "voisin.get_value()",voisin.get_value())
-                new_sent.append(voisin.get_value())
-                new_score = score + self.path_score(redudancy,len(new_sent))
-                if(self.collabisble(voisin.get_value()) and not collapsed):
-                    canchor = new_sent
-                    tmp = []
-                    anch_score = new_score + self.path_score(redudancy,len(new_sent)+1)
-                    for vx in voisin.get_next():
-                        if(vx not in alread_visited):
-                            voisin2 = self.get_node_with_id(vx)
-                            pri_tm = self.inter(pri_new,voisin2.get_score())
-                            tmp_sent = new_sent[:]
-                            tmp_sent.append(voisin2.get_value())
-                            #print("cest parti",voisin2.get_value(),pri_tm,tmp_sent)
-                            #print("appell recusrif collapse",pri_tm,tmp_sent)
-                            self.traverse(tmp,voisin2,anch_score,pri_tm,tmp_sent,alread_visited,True)
-                    if(len(tmp)>0):
-                         CCpathScore = self.averagePathScore(tmp)
-                         finalScore = anch_score/len(new_sent) + CCpathScore
-                         stitchedSent = self.stitch(canchor,tmp)
-                         liste.append((stitchedSent,finalScore))
-                else:
-                    self.traverse(liste,voisin,new_score,pri_new,new_sent,alread_visited,collapsed)
+                    if(len(sentence)>2):
+                        print("rejete",sentence)
+        if(not self.is_finishing_char(node.get_value())):
+		    for element in node.get_next():
+		        if(element not in alread_visited):
+		            voisin = self.get_node_with_id(element)
+		            pri_new = self.inter(pri_overlap,voisin.get_score())
+		            #print("pri new : ",pri_new,pri_overlap,voisin.get_score())
+		            redudancy = len(pri_new)
+		            new_sent = sentence[:]
+		            #print("new sent : ",new_sent, "voisin.get_value()",voisin.get_value())
+		            new_sent.append(voisin.get_value())
+		            new_score = score + self.path_score(redudancy,len(new_sent))
+		            if(self.collabisble(voisin.get_value()) and not collapsed):
+		                canchor = new_sent
+		                tmp = []
+		                anch_score = new_score + self.path_score(redudancy,len(new_sent)+1)
+		                #print("recusrive calls à cause de ",voisin.get_value())
+		                for vx in voisin.get_next():
+		                    if(vx not in alread_visited):
+		                        voisin2 = self.get_node_with_id(vx)
+		                        pri_tm = self.inter(pri_new,voisin2.get_score())
+		                        tmp_sent = new_sent[:]
+		                        tmp_sent.append(voisin2.get_value())
+		                        #print("cest parti",voisin2.get_value(),pri_tm,tmp_sent)
+		                        #print("appell recusrif collapse",pri_tm,tmp_sent)
+		                        self.traverse(tmp,voisin2,anch_score,pri_tm,tmp_sent,alread_visited,True)
+		                if(len(tmp)>0):
+		                     CCpathScore = self.averagePathScore(tmp)
+		                     finalScore = anch_score/len(new_sent) + CCpathScore
+		                     stitchedSent = self.stitch(canchor,tmp)
+		                     liste.append((stitchedSent,finalScore))
+		            else:
+		                self.traverse(liste,voisin,new_score,pri_new,new_sent,alread_visited,collapsed)
 
 
 
@@ -573,13 +333,6 @@ class Generation_Graphe:
 #summary : calls drop frequently
 #generator  = Generation_Graphe(["My phone calls drop frequently with the iPhone.","Great device,but the calls drop too frequently."],15)
 
-
-#generator  = Generation_Graphe(["My phone calls drop frequently with the iPhone and the battery is small.","Great device,but the calls drop too frequently and battery is enifficient."],15)
-
-
-'''
-generator = Generation_Graphe(["Three Rings for the Elven-kings under the sky","Seven for the Dwarf-lords in their halls of stone","Nine for Mortal Men doomed to die","One for the Dark Lord on his dark throne","One Ring to rule them all, One Ring to find them","One Ring to bring them all and in the darkness bind them","In the Land of Mordor where the Shadows lie."])
-'''
 
 import codecs
 def read_files(filename):
@@ -590,13 +343,131 @@ def read_files(filename):
     return result
 
 
-#generator  = Generation_Graphe(read_files("accuracy_garmin_nuvi_255W_gps.txt.data")[:2],15)
-#generator  = Generation_Graphe(["the screen is very clear.","the tv is big.","the screen is very clear.","the shop is big."],15)
+generator  = Generation_Graphe(read_files("gas_mileage_toyota_camry_2007.txt.data"),20)
+#summary : the screen is very clear and big
 #generator  = Generation_Graphe(["the screen is very clear.","the screen is big.","the screen is very clear.","the screen is big."],15)
 generator.generation()
 generator.show_informations()
 generator.generate_valid_path()
-#generator.show_informations()
+
+
+'''
+('id :', 0, 'Value : ', u',', 'Next : ', [1, 3, 11, 18, 35, 70, 92, 4, 0, 100, 104, 75], 'Score : ', [(1, 1), (1, 5), (2, 6), (2, 16), (3, 16), (5, 7), (7, 6), (8, 7), (8, 10), (8, 11), (9, 4), (10, 3)])
+('id :', 1, 'Value : ', u'and', 'Next : ', [2, 20], 'Score : ', [(1, 2), (3, 26), (5, 15), (10, 14)])
+('id :', 2, 'Value : ', u'is', 'Next : ', [3, 24, 80], 'Score : ', [(1, 3), (3, 3), (10, 5), (10, 15)])
+('id :', 3, 'Value : ', u'very', 'Next : ', [0, 4, 112], 'Score : ', [(1, 4), (1, 6), (10, 11), (10, 16)])
+('id :', 4, 'Value : ', u'accurate', 'Next : ', [5, 17, 25, 99, 31], 'Score : ', [(1, 7), (2, 14), (3, 5), (8, 8), (9, 15), (10, 17)])
+('id :', 5, 'Value : ', u'.', 'Next : ', [], 'Score : ', [(1, 8), (2, 22), (3, 37), (4, 20), (5, 27), (6, 15), (7, 14), (9, 16), (10, 20)])
+('id :', 6, 'Value : ', u'but', 'Next : ', [7], 'Score : ', [(2, 1)])
+('id :', 7, 'Value : ', u'for', 'Next : ', [8, 40], 'Score : ', [(2, 2), (3, 24)])
+('id :', 8, 'Value : ', u'the', 'Next : ', [9, 14, 38, 48, 52, 54, 79], 'Score : ', [(2, 3), (2, 10), (3, 21), (3, 35), (4, 6), (4, 9), (5, 21)])
+('id :', 9, 'Value : ', u'most', 'Next : ', [10], 'Score : ', [(2, 4)])
+('id :', 10, 'Value : ', u'part', 'Next : ', [0], 'Score : ', [(2, 5)])
+('id :', 11, 'Value : ', u'we', 'Next : ', [12, 19], 'Score : ', [(2, 7), (2, 18)])
+('id :', 12, 'Value : ', u'find', 'Next : ', [13], 'Score : ', [(2, 8)])
+('id :', 13, 'Value : ', u'that', 'Next : ', [8, 0], 'Score : ', [(2, 9), (9, 3)])
+('id :', 14, 'Value : ', u'Garmin', 'Next : ', [15, 68], 'Score : ', [(2, 11), (5, 25)])
+('id :', 15, 'Value : ', u'software', 'Next : ', [16], 'Score : ', [(2, 12)])
+('id :', 16, 'Value : ', u'provides', 'Next : ', [4, 50], 'Score : ', [(2, 13), (4, 2)])
+('id :', 17, 'Value : ', u'directions', 'Next : ', [0, 5], 'Score : ', [(2, 15), (10, 19)])
+('id :', 18, 'Value : ', u'whereever', 'Next : ', [11], 'Score : ', [(2, 17)])
+('id :', 19, 'Value : ', u'intend', 'Next : ', [20], 'Score : ', [(2, 19)])
+('id :', 20, 'Value : ', u'to', 'Next : ', [21, 41, 75, 83, 91], 'Score : ', [(2, 20), (3, 27), (5, 16), (6, 7), (7, 4)])
+('id :', 21, 'Value : ', u'go', 'Next : ', [5], 'Score : ', [(2, 21)])
+('id :', 22, 'Value : ', u'This', 'Next : ', [23], 'Score : ', [(3, 1)])
+('id :', 23, 'Value : ', u'function', 'Next : ', [2], 'Score : ', [(3, 2)])
+('id :', 24, 'Value : ', u'not', 'Next : ', [4], 'Score : ', [(3, 4)])
+('id :', 25, 'Value : ', u'if', 'Next : ', [26, 8], 'Score : ', [(3, 6), (4, 5)])
+('id :', 26, 'Value : ', u'you', 'Next : ', [27, 36], 'Score : ', [(3, 7), (3, 18)])
+('id :', 27, 'Value : ', u'do', 'Next : ', [28], 'Score : ', [(3, 8)])
+('id :', 28, 'Value : ', u"n't", 'Next : ', [29], 'Score : ', [(3, 9)])
+('id :', 29, 'Value : ', u'leave', 'Next : ', [30], 'Score : ', [(3, 10)])
+('id :', 30, 'Value : ', u'it', 'Next : ', [31], 'Score : ', [(3, 11)])
+('id :', 31, 'Value : ', u'in', 'Next : ', [32, 17], 'Score : ', [(3, 12), (10, 18)])
+('id :', 32, 'Value : ', u'battery', 'Next : ', [33], 'Score : ', [(3, 13)])
+('id :', 33, 'Value : ', u'mode', 'Next : ', [34], 'Score : ', [(3, 14)])
+('id :', 34, 'Value : ', u'say', 'Next : ', [0], 'Score : ', [(3, 15)])
+('id :', 35, 'Value : ', u'when', 'Next : ', [26], 'Score : ', [(3, 17)])
+('id :', 36, 'Value : ', u'stop', 'Next : ', [37], 'Score : ', [(3, 19)])
+('id :', 37, 'Value : ', u'at', 'Next : ', [8, 89], 'Score : ', [(3, 20), (9, 10)])
+('id :', 38, 'Value : ', u'Cracker', 'Next : ', [39], 'Score : ', [(3, 22)])
+('id :', 39, 'Value : ', u'Barrell', 'Next : ', [7], 'Score : ', [(3, 23)])
+('id :', 40, 'Value : ', u'lunch', 'Next : ', [1], 'Score : ', [(3, 25)])
+('id :', 41, 'Value : ', u'play', 'Next : ', [42], 'Score : ', [(3, 28)])
+('id :', 42, 'Value : ', u'one', 'Next : ', [43], 'Score : ', [(3, 29)])
+('id :', 43, 'Value : ', u'of', 'Next : ', [44, 80, 96], 'Score : ', [(3, 30), (5, 23), (8, 3)])
+('id :', 44, 'Value : ', u'those', 'Next : ', [45], 'Score : ', [(3, 31)])
+('id :', 45, 'Value : ', u'trangle', 'Next : ', [46], 'Score : ', [(3, 32)])
+('id :', 46, 'Value : ', u'games', 'Next : ', [47], 'Score : ', [(3, 33)])
+('id :', 47, 'Value : ', u'with', 'Next : ', [8, 86, 111], 'Score : ', [(3, 34), (6, 10), (7, 10), (10, 9)])
+('id :', 48, 'Value : ', u'tees', 'Next : ', [5], 'Score : ', [(3, 36)])
+('id :', 49, 'Value : ', u'It', 'Next : ', [16, 81, 89], 'Score : ', [(4, 1), (6, 1), (7, 1)])
+('id :', 50, 'Value : ', u'immediate', 'Next : ', [51], 'Score : ', [(4, 3)])
+('id :', 51, 'Value : ', u'alternatives', 'Next : ', [25], 'Score : ', [(4, 4)])
+('id :', 52, 'Value : ', u'route', 'Next : ', [53], 'Score : ', [(4, 7)])
+('id :', 53, 'Value : ', u'from', 'Next : ', [8, 83, 13], 'Score : ', [(4, 8), (6, 4), (9, 2)])
+('id :', 54, 'Value : ', u'online', 'Next : ', [55], 'Score : ', [(4, 10)])
+('id :', 55, 'Value : ', u'map', 'Next : ', [56], 'Score : ', [(4, 11)])
+('id :', 56, 'Value : ', u'program', 'Next : ', [57], 'Score : ', [(4, 12)])
+('id :', 57, 'Value : ', u'was', 'Next : ', [58], 'Score : ', [(4, 13)])
+('id :', 58, 'Value : ', u'inaccurate', 'Next : ', [59], 'Score : ', [(4, 14)])
+('id :', 59, 'Value : ', u'or', 'Next : ', [60], 'Score : ', [(4, 15)])
+('id :', 60, 'Value : ', u'blocked', 'Next : ', [61], 'Score : ', [(4, 16)])
+('id :', 61, 'Value : ', u'by', 'Next : ', [62], 'Score : ', [(4, 17)])
+('id :', 62, 'Value : ', u'an', 'Next : ', [63], 'Score : ', [(4, 18)])
+('id :', 63, 'Value : ', u'obstacle', 'Next : ', [5], 'Score : ', [(4, 19)])
+('id :', 64, 'Value : ', u'I', 'Next : ', [65], 'Score : ', [(5, 1), (9, 7)])
+('id :', 65, 'Value : ', u"'ve", 'Next : ', [66, 106], 'Score : ', [(5, 2), (9, 8)])
+('id :', 66, 'Value : ', u'used', 'Next : ', [67], 'Score : ', [(5, 3)])
+('id :', 67, 'Value : ', u'other', 'Next : ', [68], 'Score : ', [(5, 4)])
+('id :', 68, 'Value : ', u'GPS', 'Next : ', [69, 72, 5, 47], 'Score : ', [(5, 5), (5, 11), (5, 26), (10, 8)])
+('id :', 69, 'Value : ', u'units', 'Next : ', [0], 'Score : ', [(5, 6)])
+('id :', 70, 'Value : ', u'as', 'Next : ', [71, 68], 'Score : ', [(5, 8), (5, 10)])
+('id :', 71, 'Value : ', u'well', 'Next : ', [70], 'Score : ', [(5, 9)])
+('id :', 72, 'Value : ', u'built', 'Next : ', [73], 'Score : ', [(5, 12)])
+('id :', 73, 'Value : ', u'into', 'Next : ', [74], 'Score : ', [(5, 13)])
+('id :', 74, 'Value : ', u'cars', 'Next : ', [1], 'Score : ', [(5, 14)])
+('id :', 75, 'Value : ', u'this', 'Next : ', [76, 2], 'Score : ', [(5, 17), (10, 4)])
+('id :', 76, 'Value : ', u'day', 'Next : ', [77], 'Score : ', [(5, 18)])
+('id :', 77, 'Value : ', u'NOTHING', 'Next : ', [78], 'Score : ', [(5, 19)])
+('id :', 78, 'Value : ', u'beats', 'Next : ', [8], 'Score : ', [(5, 20)])
+('id :', 79, 'Value : ', u'accuracy', 'Next : ', [43, 88, 5], 'Score : ', [(5, 22), (6, 13), (7, 13)])
+('id :', 80, 'Value : ', u'a', 'Next : ', [14, 110], 'Score : ', [(5, 24), (10, 6)])
+('id :', 81, 'Value : ', u'got', 'Next : ', [82], 'Score : ', [(6, 2)])
+('id :', 82, 'Value : ', u'me', 'Next : ', [53, 93], 'Score : ', [(6, 3), (7, 8)])
+('id :', 83, 'Value : ', u'point', 'Next : ', [84, 85], 'Score : ', [(6, 5), (6, 8)])
+('id :', 84, 'Value : ', u'A', 'Next : ', [20], 'Score : ', [(6, 6)])
+('id :', 85, 'Value : ', u'B', 'Next : ', [47], 'Score : ', [(6, 9)])
+('id :', 86, 'Value : ', u'100', 'Next : ', [87], 'Score : ', [(6, 11), (7, 11), (9, 13)])
+('id :', 87, 'Value : ', u'%', 'Next : ', [79, 4], 'Score : ', [(6, 12), (7, 12), (9, 14)])
+('id :', 88, 'Value : ', u'everytime', 'Next : ', [5], 'Score : ', [(6, 14)])
+('id :', 89, 'Value : ', u'has', 'Next : ', [90, 107], 'Score : ', [(7, 2), (9, 11)])
+('id :', 90, 'Value : ', u'yet', 'Next : ', [20], 'Score : ', [(7, 3)])
+('id :', 91, 'Value : ', u'disappoint', 'Next : ', [0], 'Score : ', [(7, 5)])
+('id :', 92, 'Value : ', u'getting', 'Next : ', [82], 'Score : ', [(7, 7)])
+('id :', 93, 'Value : ', u'everywhere', 'Next : ', [47], 'Score : ', [(7, 9)])
+('id :', 94, 'Value : ', u'0', 'Next : ', [95], 'Score : ', [(8, 1)])
+('id :', 95, 'Value : ', u'out', 'Next : ', [43], 'Score : ', [(8, 2)])
+('id :', 96, 'Value : ', u'5', 'Next : ', [97], 'Score : ', [(8, 4)])
+('id :', 97, 'Value : ', u'stars', 'Next : ', [98], 'Score : ', [(8, 5)])
+('id :', 98, 'Value : ', u'Honest', 'Next : ', [0], 'Score : ', [(8, 6)])
+('id :', 99, 'Value : ', u'review', 'Next : ', [0], 'Score : ', [(8, 9)])
+('id :', 100, 'Value : ', u'PLEASE', 'Next : ', [101], 'Score : ', [(8, 12)])
+('id :', 101, 'Value : ', u'READ', 'Next : ', [102], 'Score : ', [(8, 13)])
+('id :', 102, 'Value : ', u'!', 'Next : ', [], 'Score : ', [(8, 14)])
+('id :', 103, 'Value : ', u'Aside', 'Next : ', [53], 'Score : ', [(9, 1)])
+('id :', 104, 'Value : ', u'every', 'Next : ', [105], 'Score : ', [(9, 5)])
+('id :', 105, 'Value : ', u'destination', 'Next : ', [64], 'Score : ', [(9, 6)])
+('id :', 106, 'Value : ', u'thrown', 'Next : ', [37], 'Score : ', [(9, 9)])
+('id :', 107, 'Value : ', u'been', 'Next : ', [86], 'Score : ', [(9, 12)])
+('id :', 108, 'Value : ', u'In', 'Next : ', [109], 'Score : ', [(10, 1)])
+('id :', 109, 'Value : ', u'closing', 'Next : ', [0], 'Score : ', [(10, 2)])
+('id :', 110, 'Value : ', u'fantastic', 'Next : ', [68], 'Score : ', [(10, 7)])
+('id :', 111, 'Value : ', u'some', 'Next : ', [3], 'Score : ', [(10, 10)])
+('id :', 112, 'Value : ', u'nice', 'Next : ', [113], 'Score : ', [(10, 12)])
+('id :', 113, 'Value : ', u'features', 'Next : ', [1], 'Score : ', [(10, 13)])
+
+'''
 
 
 

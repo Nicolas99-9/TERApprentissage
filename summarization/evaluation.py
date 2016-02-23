@@ -24,7 +24,7 @@ class Evaluation:
                 tmp2 = []
                 lines = f.readlines()
                 for line in lines:
-                    line = line.strip()
+                    line = line.strip().lower()
                     tmp.append(line)
                     tokens = nltk.word_tokenize(line)
                     #print(tokens,list(ngrams(tokens, n)))
@@ -38,7 +38,7 @@ class Evaluation:
             tmp2 = []
             lines = f.readlines()
             for line in lines:
-                line = line.strip()
+                line = line.strip().lower()
                 tmp.append(line)
                 tokens = nltk.word_tokenize(line)
                 tmp2.append(list(ngrams(tokens, n)))
@@ -52,12 +52,13 @@ class Evaluation:
             currentGram = set(self.myN_gramms[i])
             for phrase in self.n_gramms:
                 for big in phrase:
+                    print(currentGram.intersection(big))
                     score = max(score,len(currentGram.intersection(big))/float(len(big)))
         print("Score avec un model ngram : ", self.n , " score obtenu :", score)
 
 
-evaluation = Evaluation("/home/nicolas/Téléchargements/apprentissage/TER/summarization/OpinosisDataset1.0/summaries-gold/battery-life_amazon_kindle","my_result.txt",3)
+evaluation = Evaluation("/home/nicolas/Téléchargements/apprentissage/TER/summarization/OpinosisDataset1.0/summaries-gold/gas_mileage_toyota_camry_2007","my_result.txt",3)
 evaluation.evaluate()
 
-evaluation = Evaluation("/home/nicolas/Téléchargements/apprentissage/TER/summarization/OpinosisDataset1.0/summaries-gold/battery-life_amazon_kindle","my_result.txt",2)
+evaluation = Evaluation("/home/nicolas/Téléchargements/apprentissage/TER/summarization/OpinosisDataset1.0/summaries-gold/gas_mileage_toyota_camry_2007","my_result.txt",2)
 evaluation.evaluate()
