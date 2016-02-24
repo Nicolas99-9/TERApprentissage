@@ -5,6 +5,9 @@ from tagger import Tagger
 import re
 from operator import itemgetter
 from collections import Counter
+import matplotlib.pyplot as plt
+from wordcloud import WordCloud
+
 
 #input : set of sentence 
 
@@ -194,6 +197,7 @@ class Generation_Graphe:
         print(bis[:5])
         print("les autres : ")
         print(bis)
+        return bis
 
     def inter(self,pri_so_far, pri_node):
         GAP = self.gap
@@ -224,7 +228,7 @@ class Generation_Graphe:
             sent.append(i+'/'+pos_tag)
         last=sent[-1]
         w,t=last.split("/")
-        if t in set(["TO", "VBZ", "IN", "CC", "WDT", "PRP", "DT"]):
+        if t in set(["TO", "VBZ", "IN", "CC", "WDT", "PRP", "DT","CC"]):
             print("rejete avant",sentence,t,w)
             return False
         sent= " ".join(sent)
@@ -334,6 +338,17 @@ class Generation_Graphe:
 #generator  = Generation_Graphe(["My phone calls drop frequently with the iPhone.","Great device,but the calls drop too frequently."],15)
 
 
+def generate_cloud(tags,sizeX,sizeY):
+    sentence = [((" ".join(v),j)) for v,j in tags]
+    wordcloud = WordCloud(width=sizeX, height=sizeY,relative_scaling=0.5)
+    wordcloud.fit_words(sentence)
+    plt.figure( figsize=(20,10), facecolor='k')
+    plt.imshow(wordcloud)
+    plt.axis("off")
+    plt.show()
+    #plt.savefig('wordcloud.png', facecolor='k', bbox_inches='tight')
+
+
 import codecs
 def read_files(filename):
     result = []
@@ -348,8 +363,8 @@ generator  = Generation_Graphe(read_files("gas_mileage_toyota_camry_2007.txt.dat
 #generator  = Generation_Graphe(["the screen is very clear.","the screen is big.","the screen is very clear.","the screen is big."],15)
 generator.generation()
 generator.show_informations()
-generator.generate_valid_path()
-
+tags = generator.generate_valid_path()
+generate_cloud(tags,800,600)
 
 '''
 ('id :', 0, 'Value : ', u',', 'Next : ', [1, 3, 11, 18, 35, 70, 92, 4, 0, 100, 104, 75], 'Score : ', [(1, 1), (1, 5), (2, 6), (2, 16), (3, 16), (5, 7), (7, 6), (8, 7), (8, 10), (8, 11), (9, 4), (10, 3)])
