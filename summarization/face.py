@@ -193,13 +193,21 @@ def load_all_messages():
             all_comments = all_comments + new_comments
     print("Nombre total de commentaires : ",count)
     print("Nombre commentaires après suppression des spams : ",count_spam_removed)
+    punctutation = [".","!","?",";",","]
+    for element in range(len(all_comments)):
+        all_comments[element] = re.sub(r'[^\x00-\x7f]',r' ',all_comments[element])
+        if(all_comments[element][-1] not in punctutation):
+            all_comments[element] += " ."
     with open("the_revenant", 'w') as f:
         for s in all_comments:
             f.write(s + '\n')
 
 
-
-
+def grep(filename):
+    with open(filename, 'r') as f:
+        my_list = [line.decode('unicode-escape').rstrip(u'\n') for line in f]
+    for element in range(len(my_list)):
+        print(my_list[element])
 
 '''
 pages = find_a_page("The revenant")
@@ -211,3 +219,4 @@ get_all_messages(pages)
 
 #show_page_informations("RevenantMovie")
 load_all_messages()
+grep("the_revenant")
