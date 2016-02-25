@@ -57,8 +57,7 @@ class Tagger:
         test_set = brown_tagged_sentence[size:]
         return (train_set,test_set)
 
-'''
 tag  = Tagger(False)
 print(tag.tag_sent("LOVED THIS MOVIE".split()))
-print(tag.tag_sent("LOVED THIS MOVIE".lower().split()))'''
+print(tag.tag_sent("LOVED THIS MOVIE".lower().split()))
 

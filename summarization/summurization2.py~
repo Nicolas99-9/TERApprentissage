@@ -413,6 +413,9 @@ class Generation_Graphe:
         compt = 0
         return compt
 
+    def get_path_from_node_until_end(self,node):
+        pass
+
     def traverse(self,liste,node,score,pri_overlap,sentence,length,count,alread_visited):
         redudancy = len(pri_overlap)
         #sentence = sentence + " " + node.get_value()
@@ -444,6 +447,7 @@ class Generation_Graphe:
                         voisin2 = self.get_node_with_id(vx)
                         print("appell recursif depuis is")
                         #self.traverse(tmp,voisin2,0,pri_new,voisin2.get_value(),L,count+1,alread_visited)
+
                         CC = list(set(tmp))
                         #print("CCCCC",CC)
                         CCpathScore = self.averagePathScore(CC)
@@ -460,12 +464,21 @@ class Generation_Graphe:
 generator = Generation_Graphe(["Three Rings for the Elven-kings under the sky","Seven for the Dwarf-lords in their halls of stone","Nine for Mortal Men doomed to die","One for the Dark Lord on his dark throne","One Ring to rule them all, One Ring to find them","One Ring to bring them all and in the darkness bind them","In the Land of Mordor where the Shadows lie."])
 '''
 
-generator  = Generation_Graphe(["the screen is very clear","the screen is big"],15)
+def test_file(filename):
+    result =[]
+    with codecs.open(filename,"r",encoding='utf-8') as my_file:
+        for line in my_file:
+            line= line.strip()
+            result.append(line)
+    return result
+
+
+
+#generator  = Generation_Graphe(["the screen is very clear","the screen is big"],15)
 generator.generation()
 #generator.show_informations()
 generator.generate_valid_path()
 generator.show_informations()
-
 
 
 '''('id :', 0, 'Value : ', 'My', 'Next : ', [1], 'Score : ', [(1, 1)])

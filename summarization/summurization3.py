@@ -59,7 +59,7 @@ class Etiquette:
 
 class Generation_Graphe:
 
-    def __init__(self,sentences,vsn):
+    def __init__(self,sentences,vsn,fichier,use_pre_selected_word):
         self.sentences = sentences
         self.nodes= []
         self.sub_graphes = []
@@ -71,6 +71,8 @@ class Generation_Graphe:
         self.gap = 4
         self.nb_sent = len(sentences)
         self.linking = ["act","acted","am","appear","appears","appeared to be","are","is being","be","became","become","can be","becomes","come","comes","does","fall","falls","feel","fell","felt","go","got","grew","grow","had","had become","had been","had seemed","has appeared","become","have seemed","seems","seemed","indicate","indicates","is","is being","is getting","keep","keeps","look","looks","looked","may be","might be","might have been","must","prove","proves","remain","remains","remained","seem","seems","seemed","seeming","seems","shall","shall be","shall have been","should be","stay","stayed","taste","tasted","turn","was","was being","wax","waxed","went","were","will be","will become","will have become","will have been","will seen","would be"]
+        self.fichier = fichier
+        self.use_pre_selected_word = use_pre_selected_word
     
 
     def isWordIn(self ,word):
@@ -173,6 +175,8 @@ class Generation_Graphe:
     def generate_valid_path(self):
         candidats = []
         #self.redudancy_score(self.nodes,self.get_node_with_id(0))
+        taille = len(self.nodes)
+        count = 0
         for nod in self.nodes:
             if(self.position[nod.get_value()]<=self.vsn and self.valid_start_node(nod)):
                 pathLen = 1
@@ -185,9 +189,11 @@ class Generation_Graphe:
                 #print("nod : ",nod.get_score())
                 #self.show_informations()
                 sent = []
+                print((count/float(taille))*100.0 , "%")
                 sent.append(nod.get_value())
                 self.traverse(cList,nod,score,nod.get_score(),sent,[],False)
                 candidats.append(cList)
+                count += 1 
         print("-----------------------------------------")
         print("")
         bis = []
@@ -197,7 +203,27 @@ class Generation_Graphe:
         print(bis[:5])
         print("les autres : ")
         print(bis)
+        if(self.use_pre_selected_word):
+            self.write_to_file(bis)
         return bis
+
+
+    def write_to_file(self,dicos):
+        dicossss = []
+        with open(self.fichier, 'r') as f:
+             my_list = [line.decode('unicode-escape').rstrip(u'\n') for line in f]
+        dicossss = dicossss + my_list
+        for element,value in dicos:
+            mots = nltk.word_tokenize(element[0].decode("utf-8"))
+            print(mots)
+            for mot in mots:
+                dicossss.append(mot)
+        dicossss = list(set(dicossss))
+        with open(self.fichier, 'w') as f:
+            for s in dicossss:
+                f.write(s + '\n')
+
+
 
     def inter(self,pri_so_far, pri_node):
         GAP = self.gap
@@ -229,10 +255,10 @@ class Generation_Graphe:
         last=sent[-1]
         w,t=last.split("/")
         if t in set(["TO", "VBZ", "IN", "CC", "WDT", "PRP", "DT","CC"]):
-            print("rejete avant",sentence,t,w)
+            #print("rejete avant",sentence,t,w)
             return False
         sent= " ".join(sent)
-        print("sentence",sent)
+        #print("sentence",sent)
         #remove VBZ
         if re.match(".*(/NN|/NNS|/NNP|/NNPS|/VBZ)+.*(/VB|/BEZ|/BER)+.*(/JJ|/RB|/JJR|/JJS)+.*", sent):
             return True
@@ -297,7 +323,8 @@ class Generation_Graphe:
                     liste.append((ph,final_score))
                 else:
                     if(len(sentence)>2):
-                        print("rejete",sentence)
+                        pass
+                        #print("rejete",sentence)
         if(not self.is_finishing_char(node.get_value())):
 		    for element in node.get_next():
 		        if(element not in alread_visited):
@@ -351,11 +378,13 @@ class Generation_Graphe:
 
 
 import codecs
-def read_files(filename):
+def read_files(filename,loading_model = None):
     result = []
     with codecs.open(filename,"r",encoding='utf-8') as my_file:
         for line in my_file:
             result.append(line.strip())
+    if(loading_model != None):
+        pass
     return result
 
 
@@ -366,6 +395,7 @@ def read_files(filename):
 #generator.show_informations()
 #generate_cloud(tags,800,600,"gas_mileage_toyota_camry_2007-v2.png")
 
-generator  = Generation_Graphe(read_files("gas_mileage_toyota_camry_2007.txt.data"),20)
+#gas_mileage_toyota_camry_2007.txt.data
+generator  = Generation_Graphe(read_files("the_revenant"),20,"cinema_words",True)
 generator.generation()
 tags = generator.generate_valid_path()

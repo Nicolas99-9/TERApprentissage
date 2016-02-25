@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import numpy as np
+from tagger import Tagger
+import re
+
 
 #input : set of sentence 
 '''
@@ -292,9 +295,42 @@ class Generation_Graphe:
                 return element
         raise Exception("Element not found")
 
+    def valid_start_node(self,node):
+        """
+    Determine if node is a valid start node
+    
+    start_tag = set(["JJ", "RB", "PRP$", "VBG", "NN", "DT"])
+    start_word = set(["its", "the", "when", "a", "an", "this", 
+                      "the", "they", "it", "i", "we", "our",
+                      "if", "for"])
+    pri = nodes_pri[node]
+    position = [e[1] for e in pri]
+    median = np.median(position)
+    START = int(cp.get("section", "start"))
+    if median <= START:
+        w, t = node.split("/")
+        if w in start_word or t in start_tag:
+            return True
+    """
+        return True
+
     def generation(self):
         self.tokenized = [nltk.word_tokenize(self.sentences[i]) for i in range(len(self.sentences))]
         self.generate_average_position()
+        self.types = {}
+        tagger = Tagger(False)
+        for i in range(len(self.tokenized)):
+            typess = tagger.tag_sent(self.tokenized[i])
+            for j in range(len(typess)):
+                word,val = typess[j]
+                print(word,val)
+                if(not word in self.types):
+                    self.types[word] = val
+                else:
+                    if(not self.types[word] == val):
+                        print("kangouuuuuuuuuuuuuuuuuuuuuuuuuuu")
+                        self.types[word] = val
+        print(self.types)
         num_sent  = 1 
         for sent in self.tokenized:
             actual = sent
@@ -342,41 +378,23 @@ class Generation_Graphe:
         candidats = []
         #self.redudancy_score(self.nodes,self.get_node_with_id(0))
         for nod in self.nodes:
-            if(self.position[nod.get_value()]<=self.vsn):
+            if(self.position[nod.get_value()]<=self.vsn and self.valid_start_node(nod)):
                 pathLen = 1
                 score = 0
                 cList = []
                 pri = []
                 pri.append(nod.get_score())
-                #print("nod : ",nod.get_value())
+                print("nod : ",nod.get_value())
+                print("---------------------------------")
                 #print("nod : ",nod.get_score())
                 #self.show_informations()
-                self.traverse(cList,nod,score,pri,nod.get_value(),pathLen,0,[])
+                sent = []
+                sent.append(nod.get_value())
+                self.traverse(cList,nod,score,pri,sent,[],False)
                 candidats.append(cList)
         print(candidats)
 
-
-    #to complete
-    #bug only compare with the last element of the old list
-    '''def inter(self,pri_overlap,new_pri):
-        ajout = True
-        #print("debug",pri_overlap,new_pri)
-        if(len(new_pri) != self.nb_sent):
-            return pri_overlap
-        for element in pri_overlap:
-            if(len(element) != self.nb_sent):
-                #print("devient false")
-                ajout  = False
-            for i  in range(len(element)):
-                sid,pid = element[i]
-                if(len(new_pri)>=sid):
-                    sid2,pid2 = new_pri[sid-1]
-                    if(abs(pid-pid2)> self.gap):
-                        ajout = False
-        if(ajout):
-            pri_overlap.append(new_pri)
-        return pri_overlap'''
-
+    
     def inter(self,pri_overlap,new_pri):
         ajout = True
         if(len(new_pri) != self.nb_sent):
@@ -396,15 +414,40 @@ class Generation_Graphe:
 
 
 
-    def path_score(self,q,s):
-        return q*s #also possible to use q
+
+    def path_score(self,redundancy,length):
+        return np.log2(length) * redundancy
 
 
     def collabisble(self,name):
        return (name in self.linking) 
 
+
+    #Function to Validate sentence    
     def valid_sentence(self,sentence):
-        return True
+        sent=[]    
+        for i in sentence:
+            pos_tag= self.types[i]
+            sent=sent[:]
+            sent.append(i+'/'+pos_tag)
+        last=sent[-1]
+        w,t=last.split("/")
+        if t in set(["TO", "VBZ", "IN", "CC", "WDT", "PRP", "DT", ","]):
+            return False
+        sent= " ".join(sent)
+        print(sent)
+        if re.match(".*(/NN|/NNS|/NNP|/NNPS)+.*(/VB)+.*(/JJ|/RB|/JJR|/JJS)+.*", sent):
+            print("match 1 ")
+            return True
+        elif re.match(".*(/PRP|/DT)+.*(/VB)+.*(/RB|/JJ)+.*(/NN)+.*", sent):
+            return True
+        elif re.match(".*(/JJ)+.*(/TO)+.*(/VB).*", sent):
+            return True
+        elif re.match(".*(/RB)+.*(/IN)+.*(/NN)+.*", sent):
+            return True
+        else:
+            return False
+        return False
 
     def is_finishing_char(self,mot):
         return (mot in self.punctutation or mot in self.conjunction)
@@ -416,38 +459,36 @@ class Generation_Graphe:
     def get_path_from_node_until_end(self,node):
         pass
 
-    def traverse(self,liste,node,score,pri_overlap,sentence,length,count,alread_visited):
+    def traverse(self,liste,node,score,pri_overlap,sentence,alread_visited,collapsed):
         redudancy = len(pri_overlap)
-        #sentence = sentence + " " + node.get_value()
+        #print("redondace,n",redudancy,node.get_value(),pri_overlap)
         if(not self.is_finishing_char(node.get_value())):
             alread_visited.append(node.get_id())
-        print(node.get_value(),pri_overlap,sentence)
+        #print(node.get_value(),pri_overlap,sentence)
         if(redudancy >= self.sigr):
             #print("ok ajout")
             if((node.get_value() in self.punctutation) or (node.get_value() in self.conjunction)):
                 if(self.valid_sentence(sentence)):
-                    final_score = score / length
-                    liste.append((sentence,final_score))
+                    final_score = score / float(len(sentence))
+                    ph = [" ".join(sentence)]
+                    liste.append((ph,final_score))
+                else:
+                    print("phrase rejete =) ",sentence)
         for element in node.get_next():
             if(element not in alread_visited):
                 voisin = self.get_node_with_id(element)
                 pri_new = self.inter(pri_overlap,voisin.get_score())
-                print("element : ",element,voisin.get_value(),"score : ",voisin.get_score(), " afet",pri_new)
                 redudancy = len(pri_new)
-                new_sent = sentence
-                if(not voisin.get_value() in self.punctutation):
-                    new_sent = sentence + " " + voisin.get_value()
-                L = length + 1
-                new_score = score + self.path_score(redudancy,L)
-                #print("appel sur ",voisin.get_value())
-                if(self.collabisble(voisin.get_value())):
+                new_sent = sentence[:]
+                new_sent.append(voisin.get_value())
+                new_score = score + self.path_score(redudancy,len(new_sent))
+                if(self.collabisble(voisin.get_value()) and not collapsed):
                     canchor = new_sent
                     tmp = []
+                    score = new_score + path_score(redudancy,len(new_sent)+1)
                     for vx in voisin.get_next():
                         voisin2 = self.get_node_with_id(vx)
-                        print("appell recursif depuis is")
                         #self.traverse(tmp,voisin2,0,pri_new,voisin2.get_value(),L,count+1,alread_visited)
-
                         CC = list(set(tmp))
                         #print("CCCCC",CC)
                         CCpathScore = self.averagePathScore(CC)
@@ -455,31 +496,21 @@ class Generation_Graphe:
                         stitchedSent = canchor + str(CC)
                         liste.append((stitchedSent,finalScore))
                 else:
-                    self.traverse(liste,voisin,new_score,pri_new,new_sent,L,count+1,alread_visited)
+                    self.traverse(liste,voisin,new_score,pri_new,new_sent,alread_visited,False)
 
 
-#generator  = Generation_Graphe(["My phone calls drop frequently with the iPhone.","Great device,but the calls drop too frequently."],15)
+generator  = Generation_Graphe(["My phone calls drop frequently with the iPhone.","Great device,but the calls drop too frequently."],15)
 
 '''
 generator = Generation_Graphe(["Three Rings for the Elven-kings under the sky","Seven for the Dwarf-lords in their halls of stone","Nine for Mortal Men doomed to die","One for the Dark Lord on his dark throne","One Ring to rule them all, One Ring to find them","One Ring to bring them all and in the darkness bind them","In the Land of Mordor where the Shadows lie."])
 '''
 
-def test_file(filename):
-    result =[]
-    with codecs.open(filename,"r",encoding='utf-8') as my_file:
-        for line in my_file:
-            line= line.strip()
-            result.append(line)
-    return result
-
-
-
 #generator  = Generation_Graphe(["the screen is very clear","the screen is big"],15)
-generator  = Generation_Graphe(["the screen is very clear","the screen is big"],15)
 generator.generation()
-#generator.show_informations()
-generator.generate_valid_path()
 generator.show_informations()
+generator.generate_valid_path()
+#generator.show_informations()
+
 
 
 '''('id :', 0, 'Value : ', 'My', 'Next : ', [1], 'Score : ', [(1, 1)])
@@ -496,6 +527,14 @@ generator.show_informations()
 ('id :', 11, 'Value : ', ',', 'Next : ', [12], 'Score : ', [(2, 3)])
 ('id :', 12, 'Value : ', 'but', 'Next : ', [6], 'Score : ', [(2, 4)])
 ('id :', 13, 'Value : ', 'too', 'Next : ', [4], 'Score : ', [(2, 8)])
+
+'''
+
+'''
+[u'calls/VBZ', u'drop/VB', u'frequently/RB', u'with/IN', u'the/AT', 'iPhone/NN', u'./.']
+[u'calls/VBZ', u'drop/VB', u'frequently/RB', u'./.']
+('phrase rejete =) ', ['calls', 'drop', 'frequently', '.'])
+('nod : ', 'drop')
 
 '''
 
