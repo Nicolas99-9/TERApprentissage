@@ -238,9 +238,10 @@ get_all_messages(pages)
 def evaluate_sentences(sentences):
     model = model_loader('my_model_architecture.json','my_model_weights.h5',False)
     notes = model.predict_from_model(sentences,False)
-    print("Average note for \"The revenant\" :",model.get_note(np.mean(notes)))
+    print("Average note for \"The revenant\" :",model.get_note(np.mean(notes)),np.mean(notes))
 
 #show_page_informations("RevenantMovie")
 #load_all_messages()
 elements = grep("the_revenant")
+print(elements)
 evaluate_sentences(elements)
