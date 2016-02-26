@@ -4,11 +4,11 @@ class TwitterBott:
  
 
     def __init__(self):
-        consumer_key = "U7lAQQrEiy2vhlM0BI8XNWtem"
-        consumer_secret = "cmVJs76mLMNmyQBoDMJK4gB0hjpofUTl9O6Q6s3hAbqf53HsJ7"
+        consumer_key = ""
+        consumer_secret = ""
         auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
-        access_token  = "703170942516592640-niUv64aoaV851ijgZKLSGquJA2fbTTz"
-        access_secret = "9owOWpCM2NDzsCF78UABw45DgjdH3st6pxqUwLJR3ablD"
+        access_token  = ""
+        access_secret = ""
         auth.set_access_token(access_token, access_secret)
         self.api = tweepy.API(auth)
 
