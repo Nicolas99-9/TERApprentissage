@@ -87,8 +87,8 @@ class NeuralNetwork:
         self.model.add(Dropout(0.5))
         self.model.add(Dense(1))
         self.model.add(Activation('sigmoid'))
-        # try using different optimizers and different optimizer configs
-        self.model.compile(loss='binary_crossentropy',optimizer='adam',class_mode="binary")
+        # try using different optimizers and different optimizer configs  #base : adam
+        self.model.compile(loss='binary_crossentropy',optimizer='adagrad',class_mode="binary")
         self.model.fit(self.X_train, self.Y_train, batch_size=batch_size, nb_epoch=3,validation_data=(self.X_test, self.Y_test), show_accuracy=True)
         score, acc = self.model.evaluate(self.X_test, self.Y_test,batch_size=batch_size,show_accuracy=True)
         print('Test score:', score)
@@ -147,6 +147,27 @@ neural.predict(["Beautiful and impressive and performances","Thank you Alejandro
 9300,35,128 , adam , sigmoid
 ('Test score:', 0.63079299987377235)
 ('Test accuracy:', 0.75483870967741939)
+
+9300,35,128 , SGD , sigmoid
+('Test score:', 0.69296275308909805)
+('Test accuracy:', 0.50752688172043015)
+
+
+9300,35,128 , RMS , sigmoid
+('Test score:', 0.49652491258891251)
+('Test accuracy:', 0.75770609318996418)
+
+
+9300,35,128 , adagrad , sigmoid
+('Test score:', 0.6372270442705642)
+('Test accuracy:', 0.77060931899641572)
+
+9300,35,128 , adadelta , sigmoid
+('Test score:', 0.63079299987377235)
+('Test accuracy:', 0.75483870967741939)
+
+
+
 ('Test score:', 0.55097254755569613)
 ('Test accuracy:', 0.75555555555555554)  #75 % de reussite
 Average value 0.714554072069
