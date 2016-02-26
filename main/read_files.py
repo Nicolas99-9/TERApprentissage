@@ -1,0 +1,228 @@
+#coding=utf-8
+import codecs
+import numpy as np
+import cPickle
+from nltk import word_tokenize
+from nltk import FreqDist
+from pprint import pprint
+from keras.models import Sequential
+from keras.layers.core import Dense,Dropout,Activation
+import random
+from keras.layers.embeddings import Embedding
+from keras.layers.recurrent import LSTM
+
+
+
+
+#load a file with the sentence and the associate labels
+print("loading")
+
+def transform_sentences_to_index_list(filename):
+    tab = []
+    maxs = 100
+    phrases = []
+    y = []
+    with codecs.open(filename,"r",encoding='utf-8') as my_file:
+        for line in my_file:
+            line= line.strip().lower() # remove the \n*
+            mots = line.split("\t")
+            if(len(mots)==2):
+                phrase = mots[0]
+                label = mots[1]
+                phrases.append(phrase)
+                y.append(int(label))
+            #print(phrase)
+                for mot in word_tokenize(phrase):
+                    if(not mot in tab):
+                        tab.append(mot)
+    print("longueur moyenne",np.mean([len(phrases[i]) for i in range(len(phrases))]))
+    for i in range(len(phrases)):
+        mots = word_tokenize(phrases[i])
+        tmp  = []
+        for element in mots:
+            tmp.append(tab.index(element))
+        if(len(tmp) < maxs):
+            for j in range(maxs - len(tmp)):
+                tmp.append(0)
+        elif(len(tmp)>maxs):
+                tmp = tmp[:maxs]
+        phrases[i] = tmp
+    return (np.array(phrases),np.array(tab),np.array(y))
+
+
+
+def load_file_without_labels(positif, negatif):
+    tab = []
+    maxs = 35
+    phrases = []
+    y = []
+    with codecs.open(positif,"r",encoding='latin-1') as my_file:
+        for line in my_file:
+            line= line.strip().lower() # remove the \n*
+            phrases.append(line)
+            y.append(1)
+            for mot in word_tokenize(line):
+                if(not mot in tab):
+                    tab.append(mot)
+    with codecs.open(negatif,"r",encoding='latin-1') as my_file:
+        for line in my_file:
+            line= line.strip().lower() # remove the \n*
+            phrases.append(line)
+            y.append(0)
+            for mot in word_tokenize(line):
+                if(not mot in tab):
+                    tab.append(mot)
+    print("longueur moyenne",np.mean([len(phrases[i].split()) for i in range(len(phrases))]))
+    for i in range(len(phrases)):
+        mots = word_tokenize(phrases[i])
+        tmp  = []
+        for element in mots:
+            tmp.append(tab.index(element))
+        if(len(tmp) < maxs):
+            for j in range(maxs - len(tmp)):
+                tmp.append(0)
+        elif(len(tmp)>maxs):
+                tmp = tmp[:maxs]
+        phrases[i] = tmp
+    return (np.array(phrases),np.array(tab),np.array(y))
+
+
+#phrases,tab_des_mots,y = transform_sentences_to_index_list("imdb_labelled.txt")
+
+phrases,tab_des_mots,y = load_file_without_labels("rt-polarity.pos","rt-polarity.neg")
+print("save the list of all the differents words")
+
+
+cPickle.dump(list(tab_des_mots), open('list_of_words-version-test.p', 'wb')) 
+
+
+#shuffle the data :
+
+#------------------------------------------------------------------------
+tmp = [i for i in range(len(phrases))]
+random.shuffle(tmp)
+
+tmp1  = []
+tmp2  = []
+for i in tmp:
+    tmp1.append(phrases[i])
+    tmp2.append(y[i])
+
+phrases = np.array(tmp1)
+y = np.array(tmp2)
+
+X_train = phrases[:9300]
+Y_train = y[:9300]
+X_test = phrases[9300:]    
+Y_test = y[9300:]
+
+
+print("X : ",X_train[0].shape)
+print("Y !!!!:",Y_train)
+print("Y test : ",Y_test)
+#------------------------------------------------------------------------
+#First model : 
+'''
+
+model = Sequential()
+taille_vect = len(X_train[0])
+model.add(Dense(20,input_dim = taille_vect))
+model.add(Dropout(0.5))
+model.add(Dense(1,activation='sigmoid'))
+print("compiling")
+model.compile(loss='binary_crossentropy',optimizer='adadelta',class_mode='binary')
+model.fit(X_train,Y_train,nb_epoch = 20, batch_size = 12, validation_data = (X_test,Y_test), show_accuracy = True)
+score = model.evaluate(X_test,Y_test,batch_size = 12)
+
+print("score  : ",score)
+
+'''
+
+#-------------------------------------------------------------------------
+#Second model
+
+#number of differents words in the text
+max_features = len(tab_des_mots)+1
+#number of sentences in the text
+maxlen = len(phrases[0])
+
+
+#increase to improve the computation speed
+batch_size = 10
+
+#create a sequential model
+model = Sequential()
+
+# create an embedding layer
+#change the vector of index of each sentence to bring closer the similar words see: word2vec
+#similar sentence will have a similar vector
+model.add(Embedding(max_features, 35, input_length=maxlen))
+
+# create recurrent layer 
+#A Recurrent neural network has the capability to give itself feedback from past experiences. Apart from all the neurons in the network, it maintains a hidden state that changes as it sees different inputs. This hidden state is analogous to short-term memory. It remembers past experiences and bases its current answer on both the current input as well as past experiences. An illustration is shown in Figure 4.
+
+#LSTM keeps more words of its past than RNN
+
+
+model.add(LSTM(128)) 
+
+#prevent the overfitting
+model.add(Dropout(0.5))
+
+#a simple layer to return 0 or 1 (binary value)
+
+model.add(Dense(1))
+model.add(Activation('sigmoid'))
+# try using different optimizers and different optimizer configs
+model.compile(loss='binary_crossentropy',
+              optimizer='adam',
+              class_mode="binary")
+
+print("Train...")
+model.fit(X_train, Y_train, batch_size=batch_size, nb_epoch=3,
+          validation_data=(X_test, Y_test), show_accuracy=True)
+score, acc = model.evaluate(X_test, Y_test,
+                            batch_size=batch_size,
+                            show_accuracy=True)
+print('Test score:', score)
+print('Test accuracy:', acc)
+
+# save the model
+
+print("prediction")
+print("shape de X test",X_test.shape)
+print(model.predict_classes(X_test))
+
+json_string = model.to_json()
+open('my_model_architecture-version-test.json', 'w').write(json_string)
+model.save_weights('my_model_weights-version-test.h5')
+
+# load a saved model 
+
+'''
+from keras.models import model_from_json
+model = model_from_json(open('my_model_architecture.json').read())
+model.load_weights('my_model_weights.h5')
+'''
+
+
+
+'''
+creation model avec sequential => ajouter des layers
+dense => input dim  :taille du vecteur 
+activation : tanh ou par default
+renvoie 256 elements
+dropout => regularisation (systematique), empecher le overfitting (entre 0 et 1 )
+optimizer adaleta
+fit : 
+donnes d entree, les labels associes, ..., batch size : influe la vitesse dentrainement ,il prend 32 elements pour s entrainer à la fois (augmenter pour accelerer)
+ensuite donnes de validation pour voir en temps reele les perfs)
+perplexite 
+prendre un model avec deuxieme model, genere un vecteur avec juste l'indice dans le dictionnaire
+=> n grams
+data generator => melanger les donnes, prend en entree les donnes d entrainement, pour les donner au modele  d entrainement
+embedding => associer à chaque indice de mot un vecteur slid 16/21 ,  associer à l'index du mot sa representation dans le reseau
+taille entre : 4 mots, dimension de chaque mot : 64, taille entre : 4 *64
+reshape pour reprenster sous forme d un seul vecteur de taille 256
+generator permet de ne pas prendre toutes les donnes pour l'apprentissag : ex : 100 batchs de taille 512 chacun
+'''
