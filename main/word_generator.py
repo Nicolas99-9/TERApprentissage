@@ -54,7 +54,7 @@ class word_generator:
         return result
             
 
-
+'''
 geneator = word_generator()
 print(geneator.get_vocab())
 geneator.get_shape()
@@ -67,5 +67,5 @@ print(geneator.get_vec2("cat",5))
 print(geneator.get_vec2("cats",5))
 print(geneator.get_cluster_from_sentence(["Jambon beure","Media player"],25))
 
-
+'''
 
