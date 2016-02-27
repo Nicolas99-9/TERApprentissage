@@ -160,7 +160,7 @@ class NeuralNetwork:
 
 
     def predict(self,sentences):
-        news = self.load_file_without_labels(sentences)
+        news = self.load_file_without_frequency(sentences)
         print(news)
         print(self.model.predict_proba(news))
 
