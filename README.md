@@ -10,7 +10,7 @@ FEATURES:
 - A class to "tag" sentences (bind each words with its grammatical tag)
 - A module to fetch messages and comments from Facebook pages. It's also possible to find all pages using keywords and settings such as number of likes...
 - A module to summarize some comments (based on Kavita Ganesan paper http://kavita-ganesan.com/opinosis)
-- A sentence cloud 
+- A sentence cloud generator (based on https://github.com/amueller/word_cloud )
 
 
 
