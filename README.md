@@ -1,16 +1,5 @@
 # TERApprentissage
 
-usefull links :
-
-https://www.quora.com/What-is-special-about-rectifier-neural-units-used-in-NN-learning  (recu function)
-
-
-http://deeplearning.net/tutorial/  (deep learning tutorials)
-
-
-http://deeplearning.net/tutorial/lstm.html  (sentiment analysis)
-
-
 FEATURES:
 
 - Neural network to predict if a sentence is positive or negative ( 75 % accuracy ) 
@@ -22,3 +11,12 @@ FEATURES:
 - A module to fetch messages and comments from Facebook pages. It's also possible to find all pages using keywords and settings such as number of likes...
 - A module to summarize some comments (based on Kavita Ganesan paper http://kavita-ganesan.com/opinosis)
 - A sentence cloud 
+
+
+
+
+usefull links :
+
+https://www.quora.com/What-is-special-about-rectifier-neural-units-used-in-NN-learning  (recu function)
+http://deeplearning.net/tutorial/  (deep learning tutorials)
+http://deeplearning.net/tutorial/lstm.html  (sentiment analysis)
