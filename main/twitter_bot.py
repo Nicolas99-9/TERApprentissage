@@ -34,7 +34,7 @@ class stream_bot(StreamListener):
 
     def on_data(self, data):
         decoded = json.loads(data)
-        print("Username : ", decoded['user']['screen_name'].encode('ascii', 'ignore') , "Name : ", decoded['user']['name'].encode('ascii', 'ignore') ,  "User id : ", decoded['user']['id'], decoded['user']['location'].encode('ascii', 'ignore'),decoded['created_at'] , "followers : ", decoded['user']['followers_count'] , "followers :" , decoded['user']['friends_count'] )
+        print("Username : ", decoded['user']['screen_name'].encode('ascii', 'ignore') , "Name : ", decoded['user']['name'].encode('ascii', 'ignore') ,  "User id : ", decoded['user']['id'], decoded['user']['location'],decoded['created_at'] , "followers : ", decoded['user']['followers_count'] , "followers :" , decoded['user']['friends_count'] )
         print("Message  :", decoded['text'].encode('ascii', 'ignore'))
 
     def on_timeout(self):
