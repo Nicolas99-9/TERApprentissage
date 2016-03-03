@@ -1,39 +1,11 @@
 #import sfml as sf
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import colors
 from pprint import pprint
 import math
 import operator
-
-'''
-class clouds:
-
-    def __init__(self,sizeX,sizeY,sentences):
-        self.sentences = sentences
-        self.window = sf.RenderWindow(sf.VideoMode(sizeX, sizeY), "Sentiment visualisation")
-        
-    def save_image(self,image):
-        image.show()
-        try:
-            image.to_file("test-output.png")
-        except IOError:
-            print("Error dans l'entrgistrement")
-            exit(1)
-
-    def show(self):
-        images = self.window.capture()
-        self.save_image(images)
-        while self.window.is_open:
-            for event in self.window.events:
-                if type(event) is sf.CloseEvent:
-                    self.window.close()
-            self.window.clear(sf.Color(50, 200, 50))
-            self.window.display()
-    
-
-clou = clouds(800,600,["Je suis"])
-clou.show()
-'''
+from matplotlib.patches import Circle
 
 class circle:
 
@@ -78,93 +50,134 @@ class color:
         new_G = color.linear(g1,g2,t)
         new_B = color.linear(b1,b2,t)
         return "#%02X%02X%02X" % (new_R,new_G,new_B)
+    @staticmethod
+    def get_color_plot(color_string):
+        return colors.hex2color(new_colo)
+    
+    def get_color_plot(self):
+        s = "#%02X%02X%02X" % (self.color)
+        return colors.hex2color(s)
+
+class bubble_fig:
+
+    def __init__(self,width, height,sentences,sentiment,colorList):
+        self.sizeX = width
+        self.sizeY = height
+        self.sentences= sentences
+        self.sentiment = sentiment
+        self.colors_list= colorList
+        self.to_draw = self.generate_new_size(sentences)
+        self.generate_positions(self.to_draw,self.sizeX/2,self.sizeY/2,self.sentiment,self.colors_list)
+
+    
+    def show_points(self):
+        colorss = np.random.rand(len(self.liste))
+        X = [element[0] for element in self.liste]
+        Y = [element[1] for element in self.liste]
+        plt.scatter(X,Y, c = colorss)
+        plt.show()
+
+    def show_points_final(self):
+        X = []
+        Y = []
+        sizes = []
+        colorss = []
+        words = []
+        for circ in self.circles:
+            circles = self.circles[circ]
+            X.append(circles.get_pos_x())
+            Y.append(circles.get_pos_y())
+            sizes.append(circles.get_radius())
+            colorss.append(circles.get_color())
+            words.append(circ)
+        fig = plt.figure()
+        fig.patch.set_facecolor('white')
+        ax = fig.add_subplot(111, aspect='equal')
+        for x, y, r , c , w  in zip(X, Y, sizes , colorss , words):
+            ax.add_artist(Circle(xy=(x, y), radius = r , color = c ))  
+            ax.text(x, y, w, fontsize=(r/18)*1.5+5, alpha = 0.8, horizontalalignment='center',verticalalignment='center')    
+        plt.xlim(0, max(X) + 200)
+        plt.ylim(0, max(Y) + 200)
+        plt.axis('off')
+        plt.savefig("test-bubbles.png",bbox_inches='tight')
+        plt.show()
+
+    def generate_new_size(self,sentences):
+        to_draw = {}
+        total = sum([element[1] for element in sentences])
+        resize = min(sizeX,sizeY)
+        for element,poids in sentences:
+            to_draw[element] = (poids* (resize/total))
+        return to_draw
+
+    def frange(self,x, y, jump):
+      while x < y:
+        yield x
+        x += jump
 
 
+    def get_good_color(self,colors_list,value,tab):
+        for i in range(len(tab)):
+            if(value <= tab[i]):
+                c1 = colors_list[2*i-2]
+                c2 = colors_list[2*i-1]
+                v1 = tab[i-1]
+                v2 = tab[i]
+                t = (value-v1)/(v2-v1)
+                new_colo =  color.get_interpolation(c2,c1,t)
+                return new_colo
+        return np.random.rand(1)
+        
+    
+    
 
-def show_points(points):
-    colorss = np.random.rand(len(points))
-    X = [element[0] for element in points]
-    Y = [element[1] for element in points]
-    plt.scatter(X,Y, c = colorss)
-    plt.show()
+    def generate_positions(self,to_draw,pos_departX,pos_departY,sentiment,colors):
+        tab = list(self.frange(0,2,1/(float(len(colors))/2)))
+        #print(color.get_interpolation(vert1,vert2,1.0))
+        self.circles = {}
+        radius = 10.0
+        self.liste = []
+        (max_element, max_value) = ("",0.0)
+        (min_element, min_value) = ("",99999)
+        to_draw = sorted(to_draw.items(), key=operator.itemgetter(1),reverse= True)
+        (max_element, max_value) = to_draw[0]
+        (min_element, min_value) = to_draw[len(to_draw)-1]
+        self.circles[max_element] = circle(pos_departX,pos_departY,max_value,self.get_good_color(colors,sentiment[max_element],tab))
+        nbIter = 1
+        while(len(self.circles) != len(to_draw)):
+            #increase this value to improve performances
+            nbIter += 0.01
+            print(np.log(nbIter))
+            for i in self.frange(0,360,np.log2(nbIter)):
+                angle = math.radians(i)
+                x = pos_departX + radius *  math.cos(angle)
+                y = pos_departY + radius * math.sin(angle)
+                self.liste.append((x,y))
+                for element,val in to_draw:
+                    tmp_Circle = circle(x,y,val, self.get_good_color(colors,sentiment[element],tab))
+                    to_add = True
+                    for circ in self.circles:
+                        if((element in self.circles) or (tmp_Circle.intersect(self.circles[circ]))):
+                            to_add = False
+                    if(to_add):
+                        self.circles[element] = tmp_Circle
+            radius += 2
 
-def show_points_final(circles_dict):
-    X = []
-    Y = []
-    sizes = []
-    colorss = np.random.rand(len(circles_dict))
-    for circ in circles_dict:
-        circles = circles_dict[circ]
-        X.append(circles.get_pos_x())
-        Y.append(circles.get_pos_y())
-        sizes.append(circles.get_radius()*circles.get_radius())
-        #colors.append(circles.get_color())
-    plt.scatter(X,Y, s = sizes, c = colorss)
-    plt.show()
-
-def generate_new_size(sentences):
-    to_draw = {}
-    total = sum([element[1] for element in sentences])
-    resize = min(sizeX,sizeY)
-    for element,poids in sentences:
-        to_draw[element] = (poids* (resize/total))
-    return to_draw
-
-def generate_positions(to_draw,pos_departX,pos_departY):
-    vert1 = color(121,210,107)
-    vert2 = color(204,251,196)
-    rouge1 = color(165,66,35)
-    rouge2 = color(219,145,122)
-    neutre1 = color(232,209,8)
-    neutre2 = color(242,233,160)
-    #print(color.get_interpolation(vert1,vert2,1.0))
-    circles = {}
-    radius = 10.0
-    liste = []
-    (max_element, max_value) = ("",0.0)
-    (min_element, min_value) = ("",99999)
-    to_draw = sorted(to_draw.items(), key=operator.itemgetter(1),reverse= True)
-    (max_element, max_value) = to_draw[0]
-    (min_element, min_value) = to_draw[len(to_draw)-1]
-    print((max_element, max_value), (min_element, min_value))
-    circles[max_element] = circle(pos_departX,pos_departY,max_value,None)
-    while(len(circles) != len(to_draw)):
-        for i in xrange(0,360,5):
-            angle = math.radians(i)
-            x = pos_departX + radius *  math.cos(angle)
-            y = pos_departY + radius * math.sin(angle)
-            liste.append((x,y))
-            for element,val in to_draw:
-                tmp_Circle = circle(x,y,val, None)
-                to_add = True
-                for circ in circles:
-                    if((element in circles) or (tmp_Circle.intersect(circles[circ]))):
-                        to_add = False
-                if(to_add):
-                    circles[element] = tmp_Circle
-        radius += 2
-    for circ in circles:
-        circles[circ].show_informations()
-    show_points(liste) 
-    show_points_final(circles)
+    def circles_infos(self):
+        for circ in self.circles:
+            self.circles[circ].show_informations()
         
 
 
 sizeX = 800
 sizeY = 700
-
 sentences= [("game" , 3.54) , ("voiture" , 12.3 ) , ("ballon" , 5) , ("element " , 6 )  ,  ("maison" , 3) , ("film" , 2) , ("glace ", 2.35) ]
+sentiment = {"game" : 1.0 , "voiture": 0.2 , "ballon" : 0.6 , "element " : 0.95, "maison" : 0.8 , "film":  0.5 , "glace " :  0.67}
+colors_list= [color(165,66,35),color(219,145,122),color(232,209,8),color(242,233,160),color(121,210,107),color(204,251,196)]
 
-to_draw = generate_new_size(sentences)
-element_list = generate_positions(to_draw,sizeX/2,sizeY/2)
-
-'''
-circle1 = circle(1,1,1,0)
-circle2 = circle(4,2,2.1,0)
-
-print(circle1.intersect(circle2))
-
-'''
- 
+fig_bubble = bubble_fig(sizeX,sizeY,sentences,sentiment,colors_list)
+fig_bubble.show_points()
+fig_bubble.show_points_final()
+fig_bubble.circles_infos()
 
 
