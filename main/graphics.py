@@ -6,6 +6,8 @@ from pprint import pprint
 import math
 import operator
 from matplotlib.patches import Circle
+import random
+import string
 
 class circle:
 
@@ -171,8 +173,21 @@ class bubble_fig:
 
 sizeX = 800
 sizeY = 700
+'''
 sentences= [("game" , 3.54) , ("voiture" , 12.3 ) , ("ballon" , 5) , ("element " , 6 )  ,  ("maison" , 3) , ("film" , 2) , ("glace ", 2.35) ]
 sentiment = {"game" : 1.0 , "voiture": 0.2 , "ballon" : 0.6 , "element " : 0.95, "maison" : 0.8 , "film":  0.5 , "glace " :  0.67}
+'''
+
+sentences = []
+sentiment= {}
+for i in range(50):
+    s = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(7))
+    sentences.append((s,random.random()*8))
+    sentiment[s] = random.random()
+
+
+
+
 colors_list= [color(165,66,35),color(219,145,122),color(232,209,8),color(242,233,160),color(121,210,107),color(204,251,196)]
 
 fig_bubble = bubble_fig(sizeX,sizeY,sentences,sentiment,colors_list)
