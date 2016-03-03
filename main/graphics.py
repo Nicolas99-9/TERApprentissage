@@ -3,6 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pprint import pprint
 import math
+import operator
+
 '''
 class clouds:
 
@@ -44,10 +46,20 @@ class circle:
         return self.pos_x
     def get_pos_y(self):
         return self.pos_y
-    def get_radisu(self):
+    def get_radius(self):
         return self.radius
     def get_color(self):
         return self.color
+    def intersect(self,circle2):
+        distanceX = abs(float(self.pos_x - circle2.get_pos_x()))
+        distanceY = abs(float(self.pos_y - circle2.get_pos_y()))
+        sumRad = float(self.radius + circle2.get_radius())
+        to_return =  (distanceX * distanceX + distanceY * distanceY <=  sumRad * sumRad ) 
+        #print("to return ;",to_return, self.show_informations(), circle2.show_informations())
+        return to_return
+         
+    def show_informations(self):
+        print("Center X : ", self.pos_x, "Center Y : ", self.pos_y, "Radius : ", self.radius, "Color : ", self.color)
 
 
 class color:
@@ -68,6 +80,7 @@ class color:
         return "#%02X%02X%02X" % (new_R,new_G,new_B)
 
 
+
 def show_points(points):
     colorss = np.random.rand(len(points))
     X = [element[0] for element in points]
@@ -75,6 +88,19 @@ def show_points(points):
     plt.scatter(X,Y, c = colorss)
     plt.show()
 
+def show_points_final(circles_dict):
+    X = []
+    Y = []
+    sizes = []
+    colorss = np.random.rand(len(circles_dict))
+    for circ in circles_dict:
+        circles = circles_dict[circ]
+        X.append(circles.get_pos_x())
+        Y.append(circles.get_pos_y())
+        sizes.append(circles.get_radius()*circles.get_radius())
+        #colors.append(circles.get_color())
+    plt.scatter(X,Y, s = sizes, c = colorss)
+    plt.show()
 
 def generate_new_size(sentences):
     to_draw = {}
@@ -94,19 +120,33 @@ def generate_positions(to_draw,pos_departX,pos_departY):
     #print(color.get_interpolation(vert1,vert2,1.0))
     circles = {}
     radius = 10.0
-    nb_iterations = 0 
     liste = []
+    (max_element, max_value) = ("",0.0)
+    (min_element, min_value) = ("",99999)
+    to_draw = sorted(to_draw.items(), key=operator.itemgetter(1),reverse= True)
+    (max_element, max_value) = to_draw[0]
+    (min_element, min_value) = to_draw[len(to_draw)-1]
+    print((max_element, max_value), (min_element, min_value))
+    circles[max_element] = circle(pos_departX,pos_departY,max_value,None)
     while(len(circles) != len(to_draw)):
         for i in xrange(0,360,5):
             angle = math.radians(i)
             x = pos_departX + radius *  math.cos(angle)
             y = pos_departY + radius * math.sin(angle)
             liste.append((x,y))
-        nb_iterations +=1
-        radius +=3
-        if(nb_iterations>=2):
-            break
+            for element,val in to_draw:
+                tmp_Circle = circle(x,y,val, None)
+                to_add = True
+                for circ in circles:
+                    if((element in circles) or (tmp_Circle.intersect(circles[circ]))):
+                        to_add = False
+                if(to_add):
+                    circles[element] = tmp_Circle
+        radius += 2
+    for circ in circles:
+        circles[circ].show_informations()
     show_points(liste) 
+    show_points_final(circles)
         
 
 
@@ -118,9 +158,13 @@ sentences= [("game" , 3.54) , ("voiture" , 12.3 ) , ("ballon" , 5) , ("element "
 to_draw = generate_new_size(sentences)
 element_list = generate_positions(to_draw,sizeX/2,sizeY/2)
 
-    
+'''
+circle1 = circle(1,1,1,0)
+circle2 = circle(4,2,2.1,0)
 
+print(circle1.intersect(circle2))
 
+'''
  
 
 
