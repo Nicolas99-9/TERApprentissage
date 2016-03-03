@@ -11,7 +11,8 @@ FEATURES:
 - A module to fetch messages and comments from Facebook pages. It's also possible to find all pages using keywords and settings such as number of likes...
 - A module to summarize some comments (based on Kavita Ganesan paper http://kavita-ganesan.com/opinosis)
 - A sentence cloud generator (based on https://github.com/amueller/word_cloud )
-
+- Bubble-plot : a library to show informations into bubbles :
+![Image bubble plot](https://github.com/Nicolas99-9/TERApprentissage/blob/master/main/test-bubbles.png)
 
 
 
