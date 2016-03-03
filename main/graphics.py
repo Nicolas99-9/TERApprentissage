@@ -62,14 +62,16 @@ class color:
 
 class bubble_fig:
 
-    def __init__(self,width, height,sentences,sentiment,colorList):
+    def __init__(self,width, height,sentences,sentiment,colorList,middle,sort,fill):
         self.sizeX = width
         self.sizeY = height
         self.sentences= sentences
         self.sentiment = sentiment
         self.colors_list= colorList
         self.to_draw = self.generate_new_size(sentences)
-        self.generate_positions(self.to_draw,self.sizeX/2,self.sizeY/2,self.sentiment,self.colors_list)
+        self.pos_depart_x  = self.sizeX/2
+        self.pos_depart_y  = self.sizeY/2
+        self.generate_positions(self.to_draw,self.sizeX/2,self.sizeY/2,self.sentiment,self.colors_list,middle,sort,fill)
 
     
     def show_points(self):
@@ -83,6 +85,7 @@ class bubble_fig:
         X = []
         Y = []
         sizes = []
+        print("longueur de small",len(self.small))
         colorss = []
         words = []
         for circ in self.circles:
@@ -92,21 +95,30 @@ class bubble_fig:
             sizes.append(circles.get_radius())
             colorss.append(circles.get_color())
             words.append(circ)
+        for element in self.small:
+            circles = element
+            X.append(circles.get_pos_x())
+            Y.append(circles.get_pos_y())
+            sizes.append(circles.get_radius())
+            colorss.append(circles.get_color())
         fig = plt.figure()
         fig.patch.set_facecolor('white')
         ax = fig.add_subplot(111, aspect='equal')
         for x, y, r , c , w  in zip(X, Y, sizes , colorss , words):
             ax.add_artist(Circle(xy=(x, y), radius = r , color = c ))  
-            ax.text(x, y, w, fontsize=(r/18)*1.5+5, alpha = 0.8, horizontalalignment='center',verticalalignment='center')    
-        plt.xlim(0, max(X) + 200)
-        plt.ylim(0, max(Y) + 200)
+            ax.text(x, y, w, fontsize=(r/18)*1.5+5, alpha = 0.8, horizontalalignment='center',verticalalignment='center')
+        restant = int(len(X)-len(words))
+        for x, y, r, c   in zip(X[:restant], Y[:restant], sizes[:restant] , colorss[:restant]):
+            ax.add_artist(Circle(xy=(x, y), radius = r , color = c ))  
+        plt.xlim( self.pos_depart_x - self.d2 -max(sizes), self.d2 +self.pos_depart_x+ +max(sizes))
+        plt.ylim(self.pos_depart_y-self.d2 -max(sizes), self.d2 + self.pos_depart_y+max(sizes))
         plt.axis('off')
         plt.savefig("test-bubbles.png",bbox_inches='tight')
         plt.show()
 
     def generate_new_size(self,sentences):
         to_draw = {}
-        total = sum([element[1] for element in sentences])
+        total = sum([element[1] for element in sentences])/2.0
         resize = min(sizeX,sizeY)
         for element,poids in sentences:
             to_draw[element] = (poids* (resize/total))
@@ -130,21 +142,36 @@ class bubble_fig:
                 return new_colo
         return np.random.rand(1)
         
-    
-    
+    def distance(self,a,b):
+        return np.linalg.norm(a-b)
 
-    def generate_positions(self,to_draw,pos_departX,pos_departY,sentiment,colors):
+    def get_d_max(self):
+        maxs = 0.0
+        posX = np.array([self.pos_depart_x,self.pos_depart_y])
+        for circ in self.circles:
+            pos2 = self.distance(np.array([self.circles[circ].get_pos_x()+self.circles[circ].get_radius(),self.circles[circ].get_pos_y()+self.circles[circ].get_radius()]),posX)
+            maxs = max(maxs,pos2)
+        return maxs
+        
+            
+        
+
+    def generate_positions(self,to_draw,pos_departX,pos_departY,sentiment,colors,middle,sort,fill):
         tab = list(self.frange(0,2,1/(float(len(colors))/2)))
         #print(color.get_interpolation(vert1,vert2,1.0))
         self.circles = {}
+        self.small = []
         radius = 10.0
         self.liste = []
         (max_element, max_value) = ("",0.0)
         (min_element, min_value) = ("",99999)
         to_draw = sorted(to_draw.items(), key=operator.itemgetter(1),reverse= True)
+        if(not sort):
+            random.shuffle(to_draw)
         (max_element, max_value) = to_draw[0]
         (min_element, min_value) = to_draw[len(to_draw)-1]
-        self.circles[max_element] = circle(pos_departX,pos_departY,max_value,self.get_good_color(colors,sentiment[max_element],tab))
+        if(middle):
+            self.circles[max_element] = circle(pos_departX,pos_departY,max_value,self.get_good_color(colors,sentiment[max_element],tab))
         nbIter = 1
         while(len(self.circles) != len(to_draw)):
             #increase this value to improve performances
@@ -164,7 +191,31 @@ class bubble_fig:
                     if(to_add):
                         self.circles[element] = tmp_Circle
             radius += 2
-
+        if fill:
+            radius = 15.0
+            count = 0
+            d2_max = self.get_d_max()+80
+            self.d2 = d2_max
+            taille_new = 12.0
+            while(radius < d2_max):
+                #increase this value to improve performances
+                nbIter += 0.01
+                print((radius/float(d2_max)) * 100.0,d2_max)
+                for i in self.frange(0,360,np.log2(nbIter)):
+                    angle = math.radians(i)
+                    x = pos_departX + radius *  math.cos(angle)
+                    y = pos_departY + radius * math.sin(angle)
+                    tmp_Circle = circle(x,y,(taille_new+random.randint(0,30)), self.get_good_color(colors,random.random(),tab))
+                    to_add = True
+                    for circ in self.circles:
+                        if(tmp_Circle.intersect(self.circles[circ])):
+                            to_add = False
+                    for circ in self.small:
+                        if(tmp_Circle.intersect(circ)):
+                            to_add = False
+                    if(to_add):
+                        self.small.append(tmp_Circle)
+                radius += 1
     def circles_infos(self):
         for circ in self.circles:
             self.circles[circ].show_informations()
@@ -189,10 +240,9 @@ for i in range(50):
 
 
 colors_list= [color(165,66,35),color(219,145,122),color(232,209,8),color(242,233,160),color(121,210,107),color(204,251,196)]
-
-fig_bubble = bubble_fig(sizeX,sizeY,sentences,sentiment,colors_list)
+fig_bubble = bubble_fig(sizeX,sizeY,sentences,sentiment,colors_list,True,True,True)
 fig_bubble.show_points()
 fig_bubble.show_points_final()
-fig_bubble.circles_infos()
+#fig_bubble.circles_infos()
 
 
