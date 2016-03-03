@@ -13,6 +13,7 @@ FEATURES:
 - A sentence cloud generator (based on https://github.com/amueller/word_cloud )
 - Bubble-plot : a library to show informations into bubbles :
 (green : positive word, red : negative word and yellow for neutral)
+
 (the circles are scale on the word frequency)
 ![Image bubble plot](https://github.com/Nicolas99-9/TERApprentissage/blob/master/main/test-bubbles.png)
 
