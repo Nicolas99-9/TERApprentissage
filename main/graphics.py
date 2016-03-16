@@ -8,6 +8,7 @@ import operator
 from matplotlib.patches import Circle
 import random
 import string
+import codecs
 
 class circle:
 
@@ -62,13 +63,16 @@ class color:
 
 class bubble_fig:
 
-    def __init__(self,width, height,sentences,sentiment,colorList,middle,sort,fill):
+    def __init__(self,width, height,sentences,sentiment,colorList,middle,sort,fill,filename=None):
         self.sizeX = width
         self.sizeY = height
-        self.sentences= sentences
-        self.sentiment = sentiment
+        if(filename == None):
+            self.sentences= sentences
+            self.sentiment = sentiment
+        else:
+            self.load_files_test(filename)
         self.colors_list= colorList
-        self.to_draw = self.generate_new_size(sentences)
+        self.to_draw = self.generate_new_size(self.sentences)
         self.pos_depart_x  = self.sizeX/2
         self.pos_depart_y  = self.sizeY/2
         self.generate_positions(self.to_draw,self.sizeX/2,self.sizeY/2,self.sentiment,self.colors_list,middle,sort,fill)
@@ -113,12 +117,12 @@ class bubble_fig:
         plt.xlim( self.pos_depart_x - self.d2 -max(sizes), self.d2 +self.pos_depart_x+ +max(sizes))
         plt.ylim(self.pos_depart_y-self.d2 -max(sizes), self.d2 + self.pos_depart_y+max(sizes))
         plt.axis('off')
-        plt.savefig("test-bubbles.png",bbox_inches='tight')
+        plt.savefig("test-bubbles-revenant.png",bbox_inches='tight')
         plt.show()
 
     def generate_new_size(self,sentences):
         to_draw = {}
-        total = sum([element[1] for element in sentences])/2.0
+        total = sum([element[1] for element in self.sentences])/2.0
         resize = min(sizeX,sizeY)
         for element,poids in sentences:
             to_draw[element] = (poids* (resize/total))
@@ -165,6 +169,7 @@ class bubble_fig:
         self.liste = []
         (max_element, max_value) = ("",0.0)
         (min_element, min_value) = ("",99999)
+        print("to draw",to_draw)
         to_draw = sorted(to_draw.items(), key=operator.itemgetter(1),reverse= True)
         if(not sort):
             random.shuffle(to_draw)
@@ -222,27 +227,47 @@ class bubble_fig:
         
 
 
+
+    def load_files_test(self,filename):
+        self.sentences = []
+        self.sentiment = {}
+        with codecs.open(filename,"r",encoding='utf-8') as my_file:
+            for line in my_file:
+                line  = line.strip()
+                line = line.split(":")
+                if(len(line)==2):
+                    if(line[0] not in self.sentiment):
+                        self.sentences.append((line[0],float(line[1])))
+                        self.sentiment[line[0]] = 0.75;
+
 sizeX = 800
 sizeY = 700
+sentences=  []
+sentiment = []
+colors_list= [color(165,66,35),color(219,145,122),color(232,209,8),color(242,233,160),color(121,210,107),color(204,251,196)]
+fig_bubble = bubble_fig(sizeX,sizeY,sentences,sentiment,colors_list,True,True,True,"phrases_resume")
+fig_bubble.show_points_final()
+
+
 '''
 sentences= [("game" , 3.54) , ("voiture" , 12.3 ) , ("ballon" , 5) , ("element " , 6 )  ,  ("maison" , 3) , ("film" , 2) , ("glace ", 2.35) ]
 sentiment = {"game" : 1.0 , "voiture": 0.2 , "ballon" : 0.6 , "element " : 0.95, "maison" : 0.8 , "film":  0.5 , "glace " :  0.67}
 '''
-
+'''
 sentences = []
 sentiment= {}
 for i in range(50):
     s = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(7))
     sentences.append((s,random.random()*8))
     sentiment[s] = random.random()
+'''
 
 
-
-
+'''
 colors_list= [color(165,66,35),color(219,145,122),color(232,209,8),color(242,233,160),color(121,210,107),color(204,251,196)]
 fig_bubble = bubble_fig(sizeX,sizeY,sentences,sentiment,colors_list,True,True,True)
 fig_bubble.show_points()
 fig_bubble.show_points_final()
 #fig_bubble.circles_infos()
-
+'''
 

@@ -6,24 +6,27 @@ from nltk import word_tokenize
 from nltk import FreqDist
 from pprint import pprint
 from keras.models import Sequential
-from keras.layers.core import Dense,Dropout,Activation
+from keras.layers.core import Dense,Dropout,Activation,Flatten
 import random
 from keras.layers.embeddings import Embedding
 from keras.layers.recurrent import LSTM
 from nltk import ConditionalFreqDist
-
+from keras.layers.convolutional import Convolution1D, MaxPooling1D
+from keras.models import Graph
+from word_generator import word_generator
 
 class NeuralNetwork:
 
-    def __init__(self,filenamePos,filenameNeg,nbTrain,nbFeatures,lstm):
+    def __init__(self,filenamePos,filenameNeg,nbTrain,nbFeatures,lstm,wordVec):
         self.nbTrain  = nbTrain
         self.lstm = lstm
+        self.wordVec = wordVec
         self.nbFeatures = nbFeatures
-        self.phrases,self.tab_des_mots,self.y = self.load_file_without_labels(filenamePos,filenameNeg)
+        self.phrases,self.tab_des_mots,self.y = self.load_file_without_labels(filenamePos,filenameNeg,wordVec)
         cPickle.dump(list(self.tab_des_mots), open('list_of_words-version-test.p', 'wb'))
         self.shuffle_datas()
            
-    def load_file_without_labels(self,positif, negatif):
+    def load_file_without_labels(self,positif, negatif,wordVec):
 		tab = []
 		maxs = self.nbFeatures
 		phrases = []
@@ -45,18 +48,33 @@ class NeuralNetwork:
 		            if(not mot in tab):
 		                tab.append(mot)
 		print("longueur moyenne",np.mean([len(phrases[i].split()) for i in range(len(phrases))]))
-		for i in range(len(phrases)):
-		    mots = word_tokenize(phrases[i])
-		    tmp  = []
-		    for element in mots:
-		        tmp.append(tab.index(element))
-		    if(len(tmp) < maxs):
-		        for j in range(maxs - len(tmp)):
-		            tmp.append(0)
-		    elif(len(tmp)>maxs):
-		            tmp = tmp[:maxs]
-		    phrases[i] = tmp
-		return (np.array(phrases),np.array(tab),np.array(y))
+                if(wordVec):
+                    print("debnut generation")
+                    self.geneator = word_generator()
+                    pth = self.geneator.get_cluster_from_sentence(phrases,30)
+                    tdd = []
+                    for i in range(len(pth)):
+                        if(len(pth[i])>700):
+                            tdd.append(pth[i][:700])
+                        else:
+                            tdd.append(pth[i] + [0 for i in range(700-len(pth[i]))])
+                    return (tdd,np.array(tab),np.array(y))
+		else:
+                    for i in range(len(phrases)):
+		        mots = word_tokenize(phrases[i])
+		        tmp  = []
+		        for element in mots:
+		            tmp.append(tab.index(element))
+		        if(len(tmp) < maxs):
+		            for j in range(maxs - len(tmp)):
+		                tmp.append(0)
+		        elif(len(tmp)>maxs):
+		                tmp = tmp[:maxs]
+		        phrases[i] = tmp
+                print(len(phrases),len(phrases[0]))
+                phrases = np.array(phrases)
+                print("SHAPE",phrases.shape)
+		return (phrases,np.array(tab),np.array(y))
 
     def load_file_without_frequency(self,positif, negatif):
         tab = []
@@ -124,13 +142,45 @@ class NeuralNetwork:
         self.model.add(Activation('sigmoid'))
         # try using different optimizers and different optimizer configs  #base : adam
         self.model.compile(loss='binary_crossentropy',optimizer='adagrad',class_mode="binary")
-        self.model.fit(self.X_train, self.Y_train, batch_size=batch_size, nb_epoch=5,validation_data=(self.X_test, self.Y_test), show_accuracy=True)
+        self.model.fit(self.X_train, self.Y_train, batch_size=batch_size, nb_epoch=3,validation_data=(self.X_test, self.Y_test), show_accuracy=True)
         score, acc = self.model.evaluate(self.X_test, self.Y_test,batch_size=batch_size,show_accuracy=True)
         print('Test score:', score)
         print('Test accuracy:', acc)
         json_string = self.model.to_json()
         self.save_model('my_model_architecture-version-test.json','my_model_weights-version-test.h5')
 
+    def learn_second(self):
+		#number of differents words in the text
+        max_features = len(self.tab_des_mots)+1
+		#number of sentences in the text
+        maxlen = len(self.phrases[0])
+        batch_size = 10
+        #Convolution
+        filter_length = 3
+        nb_filter = 64
+        pool_length = 2
+        self.model = Sequential()
+        #similar sentence will have a similar vector, see: word2vec
+        self.model.add(Embedding(max_features, 9000 , input_length=maxlen))
+        self.model.add(Dropout(0.25))
+        # activation='relu',
+        self.model.add(Convolution1D(nb_filter=nb_filter,
+                        filter_length=filter_length,
+                        border_mode='valid',
+                        activation='relu',
+                        subsample_length=1))
+        self.model.add(MaxPooling1D(pool_length=pool_length))
+        self.model.add(LSTM(self.lstm)) 
+        self.model.add(Dense(1))
+        self.model.add(Activation('sigmoid'))
+        # try using different optimizers and different optimizer configs  #base : adam
+        self.model.compile(loss='binary_crossentropy',optimizer='adam',class_mode="binary")
+        self.model.fit(self.X_train, self.Y_train, batch_size=batch_size, nb_epoch=3,
+        validation_data=(self.X_test, self.Y_test), show_accuracy=True)
+        score, acc = self.model.evaluate(self.X_test, self.Y_test, batch_size=batch_size,
+                            show_accuracy=True)
+        print('Test score:', score)
+        print('Test accuracy:', acc)
 
     def save_model(self,filenameMo,filenameWeight):
         json_string = self.model.to_json()
@@ -166,8 +216,11 @@ class NeuralNetwork:
 
 
 
-neural  = NeuralNetwork("rt-polarity.pos","rt-polarity.neg",9300,35,128)
+neural  = NeuralNetwork("rt-polarity.pos","rt-polarity.neg",9000,35,128,True)
+
+
 neural.learn()
+#neural.learn_second()
 
 
 neural.predict(["Beautiful and impressive and performances","Thank you Alejandro Inarritu and actors for an amazing movie!","cinematography, acting, script, music, directing...","Brilliant acting Leonardo, and hats off to the Director", "Leonardo DiCaprio  surely deserves the Oscar for this incredible movie!!","Leo For the Oscars < 3 .","Well it was an awesome movie with great acting of Leonardo and Tom so it deserve a grammy.","AND THE OSCAR GOES TO LEONARDO DICAPRIO!!!!","Rosa Linda, that is theft.","What a great job ...Alejandro G.I  arritu (director) !!!","Leo's time has finally arrived.","That was a kickass flick!","The bear attack was legit!!","waiting for the oscar Leo it was just a warm-up .","Best movie and actor in the year .. Love it .. < 3 .","This is the best news ever.. Wtg.. `` Fantastic Job `` ! ! ! ! Will deserve many more.. : ) .","O MELHOR  FILME DO ANO !!!!","the story , the drama , the adventure , good story .","Surely a shoe in for the Oscar Wayne Kirk....","Great Movie!!","An extrodinary film .","Un filme bien logrado, es correcto, pero Spotlight Movie es mejor.","Great movie!!!","Don't even need an Oscar! Great movie! Great picture! Outstanding actings!","Now for the Oscar...""Kudos to Michael Punke for writing this fantastic book! And he is my nephew!!!","You deserve it.","And the scenery ! Was supposed to depict 1820 's Great Plains Usa but was filmed in Canada.. So beautiful .","Great movie .","Wicked movie loved it ."])

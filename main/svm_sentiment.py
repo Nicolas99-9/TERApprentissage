@@ -8,8 +8,8 @@ import random
 class svm_sentiment:
 
 
-    def __init__(self):
-        self.nbTrain = 9300
+    def __init__(self,nbTrain):
+        self.nbTrain = nbTrain
         self.geneator = word_generator()
         self.load_file_without_labels("rt-polarity.pos","rt-polarity.neg")
         self.shuffle_datas()
@@ -79,6 +79,8 @@ class svm_sentiment:
                 taux_erreur2 +=1.0
         print("taux d'erreurs en lineaire ", taux_erreur/float(len(predictions)))
         print("taux d'erreurs en polynomiale ", taux_erreur2/float(len(predictions2)))
+        print("taux reussite en lineaire ", 1.0-(taux_erreur/float(len(predictions))))
+        print("taux reussite en polynomiale ", 1.0-(taux_erreur2/float(len(predictions2))))
 
 
 
@@ -94,6 +96,16 @@ class svm_sentiment:
         print("Model lienaire : ",self.svc.predict(phrases))
         print("Model polynomiale : ",self.svc2.predict(phrases))
 
-sentiment = svm_sentiment()
-sentiment.predict(["Beautiful and impressive and performances","Thank you Alejandro Inarritu and actors for an amazing movie!","cinematography, acting, script, music, directing...","Brilliant acting Leonardo, and hats off to the Director", "Leonardo DiCaprio  surely deserves the Oscar for this incredible movie!!","Leo For the Oscars < 3 .","Well it was an awesome movie with great acting of Leonardo and Tom so it deserve a grammy.","AND THE OSCAR GOES TO LEONARDO DICAPRIO!!!!","Rosa Linda, that is theft.","What a great job ...Alejandro G.I  arritu (director) !!!","Leo's time has finally arrived.","That was a kickass flick!","The bear attack was legit!!","waiting for the oscar Leo it was just a warm-up .","Best movie and actor in the year .. Love it .. < 3 .","This is the best news ever.. Wtg.. `` Fantastic Job `` ! ! ! ! Will deserve many more.. : ) .","O MELHOR  FILME DO ANO !!!!","the story , the drama , the adventure , good story .","Surely a shoe in for the Oscar Wayne Kirk....","Great Movie!!","An extrodinary film .","Un filme bien logrado, es correcto, pero Spotlight Movie es mejor.","Great movie!!!","Don't even need an Oscar! Great movie! Great picture! Outstanding actings!","Now for the Oscar...""Kudos to Michael Punke for writing this fantastic book! And he is my nephew!!!","You deserve it.","And the scenery ! Was supposed to depict 1820 's Great Plains Usa but was filmed in Canada.. So beautiful .","Great movie .","Wicked movie loved it .", "So bad movie, I hated it ." , "I wasted my time ." , "The movie was so long and boring, I sleep during all the movie, very disappointed .","completely awful iranian drama . . . as much fun as a grouchy ayatollah in a cold mosque . ", "narratively , trouble every day is a plodding mess .", "there's no point in extracting the bare bones of byatt's plot for purposes of bland hollywood romance . ","directors john musker and ron clements , the team behind the little mermaid , have produced sparkling retina candy , but they aren't able to muster a lot of emotional resonance in the cold vacuum of space ." ,"adam sandler's heart may be in the right place , but he needs to pull his head out of his butt","there's no doubting that this is a highly ambitious and personal project for egoyan , but it's also one that , next to his best work , feels clumsy and convoluted . ","despite engaging offbeat touches , knockaround guys rarely seems interested in kicking around a raison d'etre that's as fresh-faced as its young-guns cast . ","it's all pretty tame . the most offensive thing about the movie is that hollywood expects people to pay to see it .", "the movie is a mess from start to finish .", "the trouble with making this queen a thoroughly modern maiden is that it also makes her appear foolish and shallow rather than , as was more likely , a victim of mental illness ." ])
+
+
+
+totest = [7000,8000,9000]
+for i in totest:
+    print(i)
+    sentiment = svm_sentiment(2000)
+
+
+
+'''
+sentiment.predict(["Beautiful and impressive and performances","Thank you Alejandro Inarritu and actors for an amazing movie!","cinematography, acting, script, music, directing...","Brilliant acting Leonardo, and hats off to the Director", "Leonardo DiCaprio  surely deserves the Oscar for this incredible movie!!","Leo For the Oscars < 3 .","Well it was an awesome movie with great acting of Leonardo and Tom so it deserve a grammy.","AND THE OSCAR GOES TO LEONARDO DICAPRIO!!!!","Rosa Linda, that is theft.","What a great job ...Alejandro G.I  arritu (director) !!!","Leo's time has finally arrived.","That was a kickass flick!","The bear attack was legit!!","waiting for the oscar Leo it was just a warm-up .","Best movie and actor in the year .. Love it .. < 3 .","This is the best news ever.. Wtg.. `` Fantastic Job `` ! ! ! ! Will deserve many more.. : ) .","O MELHOR  FILME DO ANO !!!!","the story , the drama , the adventure , good story .","Surely a shoe in for the Oscar Wayne Kirk....","Great Movie!!","An extrodinary film .","Un filme bien logrado, es correcto, pero Spotlight Movie es mejor.","Great movie!!!","Don't even need an Oscar! Great movie! Great picture! Outstanding actings!","Now for the Oscar...""Kudos to Michael Punke for writing this fantastic book! And he is my nephew!!!","You deserve it.","And the scenery ! Was supposed to depict 1820 's Great Plains Usa but was filmed in Canada.. So beautiful .","Great movie .","Wicked movie loved it .", "So bad movie, I hated it ." , "I wasted my time ." , "The movie was so long and boring, I sleep during all the movie, very disappointed .","completely awful iranian drama . . . as much fun as a grouchy ayatollah in a cold mosque . ", "narratively , trouble every day is a plodding mess .", "there's no point in extracting the bare bones of byatt's plot for purposes of bland hollywood romance . ","directors john musker and ron clements , the team behind the little mermaid , have produced sparkling retina candy , but they aren't able to muster a lot of emotional resonance in the cold vacuum of space ." ,"adam sandler's heart may be in the right place , but he needs to pull his head out of his butt","there's no doubting that this is a highly ambitious and personal project for egoyan , but it's also one that , next to his best work , feels clumsy and convoluted . ","despite engaging offbeat touches , knockaround guys rarely seems interested in kicking around a raison d'etre that's as fresh-faced as its young-guns cast . ","it's all pretty tame . the most offensive thing about the movie is that hollywood expects people to pay to see it .", "the movie is a mess from start to finish .", "the trouble with making this queen a thoroughly modern maiden is that it also makes her appear foolish and shallow rather than , as was more likely , a victim of mental illness ." ])'''
 
