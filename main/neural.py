@@ -54,10 +54,10 @@ class NeuralNetwork:
                     pth = self.geneator.get_cluster_from_sentence(phrases,30)
                     tdd = []
                     for i in range(len(pth)):
-                        if(len(pth[i])>700):
-                            tdd.append(pth[i][:700])
+                        if(len(pth[i])>900):
+                            tdd.append(pth[i][:900])
                         else:
-                            tdd.append(pth[i] + [0 for i in range(700-len(pth[i]))])
+                            tdd.append(pth[i] + [0 for i in range(900-len(pth[i]))])
                     return (tdd,np.array(tab),np.array(y))
 		else:
                     for i in range(len(phrases)):
