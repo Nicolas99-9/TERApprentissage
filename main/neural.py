@@ -222,6 +222,26 @@ neural  = NeuralNetwork("rt-polarity.pos","rt-polarity.neg",9000,35,128,False)
 
 
 #neural.learn()
+
+neural  = NeuralNetwork("rt-polarity.pos","rt-polarity.neg",100,35,128,False)
+neural.learn_second()
+
+neural  = NeuralNetwork("rt-polarity.pos","rt-polarity.neg",1000,35,128,False)
+neural.learn_second()
+
+neural  = NeuralNetwork("rt-polarity.pos","rt-polarity.neg",2000,35,128,False)
+neural.learn_second()
+
+neural  = NeuralNetwork("rt-polarity.pos","rt-polarity.neg",4000,35,128,False)
+neural.learn_second()
+
+neural  = NeuralNetwork("rt-polarity.pos","rt-polarity.neg",6000,35,128,False)
+neural.learn_second()
+
+neural  = NeuralNetwork("rt-polarity.pos","rt-polarity.neg",8000,35,128,False)
+neural.learn_second()
+
+neural  = NeuralNetwork("rt-polarity.pos","rt-polarity.neg",9000,35,128,False)
 neural.learn_second()
 
 
