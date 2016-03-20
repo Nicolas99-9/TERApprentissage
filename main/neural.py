@@ -51,13 +51,15 @@ class NeuralNetwork:
                 if(wordVec):
                     print("debnut generation")
                     self.geneator = word_generator()
-                    pth = self.geneator.get_cluster_from_sentence(phrases,30)
+                    pth = self.geneator.get_cluster_from_sentence(phrases,10)
                     tdd = []
+                    N = 300
+                    self.nbFeatures = N
                     for i in range(len(pth)):
-                        if(len(pth[i])>900):
-                            tdd.append(pth[i][:900])
+                        if(len(pth[i])>N):
+                            tdd.append(pth[i][:N])
                         else:
-                            tdd.append(pth[i] + [0 for i in range(900-len(pth[i]))])
+                            tdd.append(pth[i] + [0 for i in range(N-len(pth[i]))])
                     return (tdd,np.array(tab),np.array(y))
 		else:
                     for i in range(len(phrases)):
@@ -215,12 +217,12 @@ class NeuralNetwork:
         print(self.model.predict_proba(news))
 
 
+neural  = NeuralNetwork("rt-polarity.pos","rt-polarity.neg",9000,35,128,False)
+#neural  = NeuralNetwork("rt-polarity.pos","rt-polarity.neg",9000,35,1080,True)
 
-neural  = NeuralNetwork("rt-polarity.pos","rt-polarity.neg",9000,35,128,True)
 
-
-neural.learn()
-#neural.learn_second()
+#neural.learn()
+neural.learn_second()
 
 
 neural.predict(["Beautiful and impressive and performances","Thank you Alejandro Inarritu and actors for an amazing movie!","cinematography, acting, script, music, directing...","Brilliant acting Leonardo, and hats off to the Director", "Leonardo DiCaprio  surely deserves the Oscar for this incredible movie!!","Leo For the Oscars < 3 .","Well it was an awesome movie with great acting of Leonardo and Tom so it deserve a grammy.","AND THE OSCAR GOES TO LEONARDO DICAPRIO!!!!","Rosa Linda, that is theft.","What a great job ...Alejandro G.I  arritu (director) !!!","Leo's time has finally arrived.","That was a kickass flick!","The bear attack was legit!!","waiting for the oscar Leo it was just a warm-up .","Best movie and actor in the year .. Love it .. < 3 .","This is the best news ever.. Wtg.. `` Fantastic Job `` ! ! ! ! Will deserve many more.. : ) .","O MELHOR  FILME DO ANO !!!!","the story , the drama , the adventure , good story .","Surely a shoe in for the Oscar Wayne Kirk....","Great Movie!!","An extrodinary film .","Un filme bien logrado, es correcto, pero Spotlight Movie es mejor.","Great movie!!!","Don't even need an Oscar! Great movie! Great picture! Outstanding actings!","Now for the Oscar...""Kudos to Michael Punke for writing this fantastic book! And he is my nephew!!!","You deserve it.","And the scenery ! Was supposed to depict 1820 's Great Plains Usa but was filmed in Canada.. So beautiful .","Great movie .","Wicked movie loved it ."])
