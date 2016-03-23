@@ -91,7 +91,7 @@ DESCRIPTION = []
 #CREATION TIME (all pages after this date)
 DATE = -1
 #MAX NUMBER OF PAGES
-MAX_PAGES = 1 
+MAX_PAGES = 1
 
 
 

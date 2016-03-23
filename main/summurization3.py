@@ -7,6 +7,7 @@ from operator import itemgetter
 from collections import Counter
 import matplotlib.pyplot as plt
 from wordcloud import WordCloud
+import pickle
 
 
 #input : set of sentence 
@@ -170,6 +171,36 @@ class Generation_Graphe:
             if(nodess in path):
                 self.redudancy_score(path,nodess)
         
+
+    def remove_duplicates(self,liste):
+        finale = {}
+        for (cle,valeur) in liste:
+           cle = " ".join(cle)
+           if(cle not in finale):
+               finale[cle] = valeur
+           else:
+               ajout = False
+        
+
+        '''tmp = sorted(finale, key=len,reverse= False) 
+        finale2 = {}
+        print("taille avant  ",len(finale),finale)
+        for c in tmp:
+            ajout  = True
+            for element in finale:
+                if(c in element and c != element):
+                    print("remove de",c)
+                    ajout = False
+                    if(element not in finale2):
+                        finale2[element] = finale[c]
+                    else:
+                        finale2[element] += finale[c]
+            if(ajout):
+                finale2[c] = finale[c] 
+        print("len après", len(finale2)) '''
+        return finale
+
+
     def generate_valid_path(self):
         candidats = []
         #self.redudancy_score(self.nodes,self.get_node_with_id(0))
@@ -199,12 +230,11 @@ class Generation_Graphe:
             bis = bis + [candidats[i][j] for j in range(len(candidats[i]))]
         bis  = sorted(bis,key=itemgetter(1),reverse = True)
         print(bis[:5])
-        print("les autres : ")
         print(bis)
         if(self.use_pre_selected_word):
             self.write_to_file(bis)
+        bis = self.remove_duplicates(bis)
         return bis
-
 
     def write_to_file(self,dicos):
         dicossss = []
@@ -364,7 +394,7 @@ class Generation_Graphe:
 
 
     def generate_cloud(self,tags,sizeX,sizeY,filename = None):
-        sentence = [((" ".join(v),j)) for v,j in tags]
+        sentence = zip(tags.keys(),tags.values())
         wordcloud = WordCloud(width=sizeX, height=sizeY,relative_scaling=0.6)
         wordcloud.fit_words(sentence)
         plt.figure( figsize=(20,10), facecolor='k')
@@ -385,6 +415,9 @@ def read_files(filename,loading_model = None):
         pass
     return result
 
+def save_element(filename,dico):
+    with open(filename, 'wb') as handle:
+        pickle.dump(dico, handle)
 
 #generator  = Generation_Graphe(read_files("gas_mileage_toyota_camry_2007.txt.data"),20)
 #summary : the screen is very clear and big
@@ -393,7 +426,9 @@ def read_files(filename,loading_model = None):
 #generator.show_informations()
 #generate_cloud(tags,800,600,"gas_mileage_toyota_camry_2007-v2.png")
 
-#gas_mileage_toyota_camry_2007.txt.data
-generator  = Generation_Graphe(read_files("the_revenant"),20,"cinema_words",True)
+generator  = Generation_Graphe(read_files("the_revenant")[:500],20,"cinema_words",True)
 generator.generation()
 tags = generator.generate_valid_path()
+print(tags)
+save_element("resume-tmp",tags)
+generator.generate_cloud(tags,800,600,"rapportv2.png")

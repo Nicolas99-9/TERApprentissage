@@ -9,6 +9,9 @@ from matplotlib.patches import Circle
 import random
 import string
 import codecs
+from load_model import model_loader
+import pickle
+
 
 class circle:
 
@@ -240,10 +243,28 @@ class bubble_fig:
                         self.sentences.append((line[0],float(line[1])))
                         self.sentiment[line[0]] = 0.75;
 
+
+
+
+def load_element(filename):
+    with open(filename, 'rb') as handle:
+        b = pickle.load(handle)
+    return b
+
+
+
+model = model_loader('my_model_architecture-version-test.json','my_model_weights-version-test.h5',False)
+model.predict_from_model(["I love this shirt, its color is so nice","The move was so awful, the acting was terrible","Supported by a very clever script, Deadpool is deliciously irreverent, subversive and uproariously funny"])
+
+
+sentences= load_element("resume-tmp")
+sentences = zip(sentences.keys(),sentences.values())
+sentiment= {}
+for key,value in sentences:
+    sentiment[key] = model.predict_from_model_solo(key) 
+
 sizeX = 800
 sizeY = 700
-sentences=  []
-sentiment = []
 colors_list= [color(165,66,35),color(219,145,122),color(232,209,8),color(242,233,160),color(121,210,107),color(204,251,196)]
 fig_bubble = bubble_fig(sizeX,sizeY,sentences,sentiment,colors_list,True,True,True,"phrases_resume")
 fig_bubble.show_points_final()

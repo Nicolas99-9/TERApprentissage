@@ -23,7 +23,7 @@ class model_loader:
         self.model = self.load_saved_model(modelFile,modelWeight)
         if(reCompile):
             self.model.compile(loss=lossFunction,optimizer=optimizerS,class_mode=class_modeS)
-        self.dico_des_mots_differents = cPickle.load(open('list_of_words.p', 'rb'))
+        self.dico_des_mots_differents = cPickle.load(open('list_of_words-version-test.p', 'rb'))
 
     def load_saved_model(self,filename,filename2):
         print("Loading model ")
@@ -66,11 +66,16 @@ class model_loader:
                 print "Score of the sentence : \n {0} => {1:.4f}  \n Note : {2}  \n=========================================".format(sentence[i],float(predictions[i]),self.get_note(float(predictions[i])))
         return predictions
 
+    def predict_from_model_solo(self,sentence):
+        new_sentence = self.get_tab_from_sentence(sentence,self.dico_des_mots_differents)
+        predictions = self.model.predict_proba(new_sentence)
+        return predictions
+
 
 
 #Examples :
 '''
-model = model_loader('my_model_architecture.json','my_model_weights.h5',False)
+model = model_loader('my_model_architecture-version-test.json','my_model_weights-version-test.h5',False)
 model.predict_from_model(["I love this shirt, its color is so nice","The move was so awful, the acting was terrible","Supported by a very clever script, Deadpool is deliciously irreverent, subversive and uproariously funny"])
 '''
 
